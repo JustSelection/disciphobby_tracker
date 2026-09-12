@@ -69,36 +69,6 @@ class _ActiveObjectScreenState extends State<ActiveObjectScreen> {
     );
   }
 
-  Future<void> _returnToQueue() async {
-    HapticFeedback.selectionClick();
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Вернуть в очередь?'),
-        content: const Text('Объект будет перемещен в конец очереди, а отсчет времени сброшен.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Отмена')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Вернуть')),
-        ],
-      ),
-    );
-    
-    if (confirm == true && mounted) {
-      HapticFeedback.mediumImpact();
-      await (db.update(db.hobbyObjects)..where((t) => t.id.equals(widget.object.id))).write(
-        HobbyObjectsCompanion(
-          status: drift.Value(HobbyObjectStatus.queued),
-          startDate: const drift.Value(null),
-          updatedAt: drift.Value(DateTime.now()),
-        ),
-      );
-      // ✅ ДОБАВЛЕНО: проверка mounted перед использованием context после await
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
-    }
-  }
-
   Future<void> _changeEmoji() async {
     HapticFeedback.selectionClick();
     final newEmoji = await EmojiPickerService.show(context);
@@ -109,7 +79,6 @@ class _ActiveObjectScreenState extends State<ActiveObjectScreen> {
           updatedAt: drift.Value(DateTime.now()),
         ),
       );
-      // ✅ ДОБАВЛЕНО: проверка mounted перед использованием context после await
       if (mounted) {
         HapticFeedback.mediumImpact();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -148,7 +117,6 @@ class _ActiveObjectScreenState extends State<ActiveObjectScreen> {
           updatedAt: drift.Value(DateTime.now()),
         ),
       );
-      // ✅ ДОБАВЛЕНО: проверка mounted перед использованием context после await
       if (mounted) {
         HapticFeedback.mediumImpact();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -162,15 +130,9 @@ class _ActiveObjectScreenState extends State<ActiveObjectScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
+      // ✅ УБРАНО: actions с кнопкой "Вернуть в очередь"
       appBar: AppBar(
         title: const Text('Активный объект', overflow: TextOverflow.ellipsis),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.playlist_add),
-            tooltip: 'Вернуть в очередь',
-            onPressed: _returnToQueue,
-          ),
-        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())

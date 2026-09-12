@@ -4,14 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../database/app_database.dart';
 import '../main.dart';
-import '../repositories/hobby_object_repository.dart';
 import 'deferred_locked_widget.dart';
 import 'deferred_filled_widget.dart';
 
 /// Обёртка слота отложенного объекта (Сцена 3).
 class DeferredSlotWidget extends StatefulWidget {
   final HobbyObject? deferredObject;
-  final HobbyObject? activeObject; // ДОБАВЛЕНО: для логики переноса
+  final HobbyObject? activeObject;
   final int completedCount;
   final int categoryId;
   final VoidCallback onObjectChanged;
@@ -35,7 +34,6 @@ class _DeferredSlotWidgetState extends State<DeferredSlotWidget> {
     Navigator.of(context).pop();
     HapticFeedback.mediumImpact();
 
-    // Удалена неиспользуемая переменная repo, используется прямой запрос к db
     await (db.update(db.hobbyObjects)..where((t) => t.id.equals(widget.activeObject!.id))).write(
       HobbyObjectsCompanion(
         status: drift.Value(HobbyObjectStatus.deferred),
@@ -45,6 +43,7 @@ class _DeferredSlotWidgetState extends State<DeferredSlotWidget> {
     if (mounted) widget.onObjectChanged();
   }
 
+  // ✅ ИСПРАВЛЕНО: Меню теперь содержит ТОЛЬКО кнопку "Сделать активным"
   void _showDeferredObjectMenu() {
     HapticFeedback.selectionClick();
     showModalBottomSheet(
@@ -56,29 +55,59 @@ class _DeferredSlotWidgetState extends State<DeferredSlotWidget> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Управление отложенным объектом', style: Theme.of(ctx).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: () async {
-                Navigator.of(ctx).pop();
-                await (db.update(db.hobbyObjects)..where((t) => t.id.equals(widget.deferredObject!.id))).write(
-                  HobbyObjectsCompanion(status: drift.Value(HobbyObjectStatus.queued), updatedAt: drift.Value(DateTime.now())),
-                );
-                if (mounted) widget.onObjectChanged();
-              },
-              icon: const Icon(Icons.playlist_add),
-              label: const Text('Вернуть в очередь'),
+            Text(
+              'Управление отложенным объектом',
+              style: Theme.of(ctx).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
+            const SizedBox(height: 8),
+            Text(
+              '«${widget.deferredObject?.name}» сейчас на паузе.',
+              style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(color: Theme.of(ctx).colorScheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: 24),
+            
+            // ✅ ЕДИНСТВЕННОЕ ДЕЙСТВИЕ: Сделать активным
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () async {
+                  Navigator.of(ctx).pop();
+                  HapticFeedback.mediumImpact();
+                  
+                  // 1. Меняем статус на active и устанавливаем дату начала
+                  await (db.update(db.hobbyObjects)..where((t) => t.id.equals(widget.deferredObject!.id))).write(
+                    HobbyObjectsCompanion(
+                      status: drift.Value(HobbyObjectStatus.active),
+                      startDate: drift.Value(DateTime.now()),
+                      updatedAt: drift.Value(DateTime.now()),
+                    ),
+                  );
+                  
+                  // 2. Обновляем UI категории
+                  if (mounted) {
+                    widget.onObjectChanged();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Объект перемещен в активные'), duration: Duration(seconds: 1)),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.play_arrow),
+                label: const Text('Сделать активным', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+            
             const SizedBox(height: 12),
-            OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(foregroundColor: Theme.of(ctx).colorScheme.error),
-              onPressed: () async {
-                Navigator.of(ctx).pop();
-                await (db.delete(db.hobbyObjects)..where((t) => t.id.equals(widget.deferredObject!.id))).go();
-                if (mounted) widget.onObjectChanged();
-              },
-              icon: const Icon(Icons.delete_outline),
-              label: const Text('Удалить объект'),
+            // Кнопка отмены для закрытия меню
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('Отмена'),
+              ),
             ),
           ],
         ),
@@ -99,7 +128,7 @@ class _DeferredSlotWidgetState extends State<DeferredSlotWidget> {
           children: [
             Text('Отложить "${widget.activeObject?.name}"?', style: Theme.of(ctx).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
-            Text('Объект станет недоступен для завершения, пока вы не вернете его в очередь.', style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(color: Theme.of(ctx).colorScheme.onSurfaceVariant)),
+            Text('Объект станет недоступен для завершения, пока вы не активируете его снова.', style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(color: Theme.of(ctx).colorScheme.onSurfaceVariant)),
             const SizedBox(height: 24),
             Row(
               children: [

@@ -3,24 +3,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../database/app_database.dart';
 import '../utils/elapsed_time_formatter.dart';
-import '../screens/archive_screen.dart'; // ДОБАВЛЕНО
+import '../screens/archive_screen.dart';
+import '../screens/summary_screen.dart'; // ✅ ДОБАВЛЕНО: для прямого перехода к сводке
 
 /// Блок превью завершенных объектов (Сцена 3).
 class CompletedPreviewWidget extends StatelessWidget {
   final List<HobbyObject> completedObjects;
   final int categoryId;
-  final String categoryName; // ДОБАВЛЕНО
+  final String categoryName;
 
   const CompletedPreviewWidget({
     super.key,
     required this.completedObjects,
     required this.categoryId,
-    required this.categoryName, // ДОБАВЛЕНО
+    required this.categoryName,
   });
 
   void _onShowAll(BuildContext context) {
     HapticFeedback.selectionClick();
-    // ✅ РЕАЛИЗОВАНО: Навигация на ArchiveScreen
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -114,48 +114,60 @@ class _CompletedPreviewCard extends StatelessWidget {
         ? ElapsedTimeFormatter.formatPeriod(object.startDate!, object.endDate!)
         : 'Дата не указана';
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: theme.colorScheme.outlineVariant, width: 1),
-      ),
-      child: Row(
-        children: [
-          Text(object.emoji, style: const TextStyle(fontSize: 28)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  object.name,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    decoration: TextDecoration.lineThrough,
-                    decorationColor: theme.colorScheme.outline,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Text(period, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline)),
-              ],
-            ),
+    // ✅ ДОБАВЛЕНО: GestureDetector для обработки тапа по всей карточке
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SummaryScreen(object: object),
           ),
-          if (object.rating != null) ...[
-            const SizedBox(width: 8),
-            Text(
-              '★ ${object.rating}',
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.bold,
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: theme.colorScheme.outlineVariant, width: 1),
+        ),
+        child: Row(
+          children: [
+            Text(object.emoji, style: const TextStyle(fontSize: 28)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    object.name,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      decoration: TextDecoration.lineThrough,
+                      decorationColor: theme.colorScheme.outline,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(period, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline)),
+                ],
               ),
             ),
+            if (object.rating != null) ...[
+              const SizedBox(width: 8),
+              Text(
+                '★ ${object.rating}',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
