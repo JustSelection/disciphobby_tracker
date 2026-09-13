@@ -6,7 +6,7 @@ import '../database/app_database.dart';
 import '../main.dart';
 import '../repositories/hobby_object_repository.dart';
 import '../repositories/note_repository.dart';
-import '../utils/active_period_helper.dart'; // ✅ ИМПОРТ ПОМОЩНИКА
+import '../utils/active_period_helper.dart';
 import '../widgets/review_step_widget.dart';
 import '../widgets/rating_step_widget.dart';
 import '../widgets/next_object_step_widget.dart';
@@ -63,7 +63,7 @@ class _CompletionFlowScreenState extends State<CompletionFlowScreen> {
     setState(() => _currentStep--);
   }
 
-  // ✅ ОБНОВЛЕНО: Сохраняем финальный активный период в историю
+  // ✅ ИСПРАВЛЕНО: ЗАКРЫВАЕМ последний открытый период, а не добавляем новый
   Future<void> _finishAndRate() async {
     if (_rating == null) return;
     HapticFeedback.mediumImpact();
@@ -73,22 +73,33 @@ class _CompletionFlowScreenState extends State<CompletionFlowScreen> {
     // 1. Получаем текущую историю периодов
     final periods = ActivePeriodHelper.parse(widget.object.activePeriods);
     
-    // 2. Если есть дата начала, добавляем финальный отрезок до текущего момента
-    if (widget.object.startDate != null) {
+    // 2. ✅ НАХОДИМ последний открытый период (end == null) и закрываем его
+    bool foundOpenPeriod = false;
+    for (int i = periods.length - 1; i >= 0; i--) {
+      if (periods[i].end == null) {
+        // Закрываем этот период текущим временем
+        periods[i] = ActivePeriod(start: periods[i].start, end: now);
+        foundOpenPeriod = true;
+        break;
+      }
+    }
+    
+    // 3. Если открытых периодов не нашли (старые данные), создаем новый от startDate
+    if (!foundOpenPeriod && widget.object.startDate != null) {
       periods.add(ActivePeriod(start: widget.object.startDate!, end: now));
     }
     
-    // 3. Преобразуем обратно в JSON
+    // 4. Преобразуем обратно в JSON
     final newPeriodsJson = ActivePeriodHelper.toJson(periods);
 
-    // 4. Обновляем объект в БД
+    // 5. Обновляем объект в БД
     await (db.update(db.hobbyObjects)..where((t) => t.id.equals(widget.object.id))).write(
       HobbyObjectsCompanion(
         status: drift.Value(HobbyObjectStatus.completed),
         endDate: drift.Value(now),
         reviewText: drift.Value(_reviewText),
         rating: drift.Value(_rating),
-        activePeriods: drift.Value(newPeriodsJson), // ✅ СОХРАНЯЕМ ИСТОРИЮ
+        activePeriods: drift.Value(newPeriodsJson),
         updatedAt: drift.Value(now),
       ),
     );

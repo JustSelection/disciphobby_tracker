@@ -85,15 +85,13 @@ class SummaryStatsWidget extends StatelessWidget {
     final obj = object;
     final periods = ActivePeriodHelper.parse(obj.activePeriods);
     
-    // ✅ ПРОБЛЕМА 2: Начало считается от самого первого периода активности.
+    // ✅ Начало считается от самого первого периода активности.
     // Если история пуста (старые данные), используем obj.startDate как запасной вариант.
     final trueStartDate = periods.isNotEmpty ? periods.first.start : obj.startDate;
 
-    final totalActiveDuration = ActivePeriodHelper.calculateTotalActiveTime(
-      periods,
-      obj.startDate,
-      obj.status,
-    );
+    // ✅ ИСПРАВЛЕНО: Передаем только periods, так как метод теперь опирается только на них.
+    // Это гарантирует, что время в статусе "Отложено" не будет суммироваться.
+    final totalActiveDuration = ActivePeriodHelper.calculateTotalActiveTime(periods);
 
     final durationText = (totalActiveDuration.inDays > 0 || totalActiveDuration.inHours > 0)
         ? '${totalActiveDuration.inDays} дн. ${totalActiveDuration.inHours.remainder(24)} ч.'
@@ -124,7 +122,7 @@ class SummaryStatsWidget extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        // ✅ ПУНКТ 3: Еле заметный контур и чистый текст "В пути"
+        // ✅ Еле заметный контур и чистый текст "В пути"
         InkWell(
           onTap: () => _showHistoryDialog(context),
           borderRadius: BorderRadius.circular(12),

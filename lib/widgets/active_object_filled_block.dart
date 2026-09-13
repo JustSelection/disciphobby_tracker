@@ -29,7 +29,6 @@ class _ActiveObjectFilledBlockState extends State<ActiveObjectFilledBlock> {
   @override
   void initState() {
     super.initState();
-    debugPrint('🚀 [DEBUG] ActiveObjectFilledBlock: initState вызван! Дата: ${widget.activeObject.startDate}');
     _recalculateElapsed();
     _startTimer();
   }
@@ -37,11 +36,12 @@ class _ActiveObjectFilledBlockState extends State<ActiveObjectFilledBlock> {
   @override
   void didUpdateWidget(ActiveObjectFilledBlock oldWidget) {
     super.didUpdateWidget(oldWidget);
-    debugPrint('🔄 [DEBUG] ActiveObjectFilledBlock: didUpdateWidget! Старая дата: ${oldWidget.activeObject.startDate}, Новая дата: ${widget.activeObject.startDate}');
     
-    // Если дата изменилась, принудительно пересчитываем время
-    if (oldWidget.activeObject.startDate != widget.activeObject.startDate) {
-      debugPrint('✅ [DEBUG] Дата изменилась! Принудительный пересчет времени.');
+    // ✅ ИСПРАВЛЕНО: Пересчитываем время, если данные объекта изменились.
+    // Это гарантирует мгновенное обновление таймера после свайпа вниз или возврата из "Отложено",
+    // даже если startDate остался прежним (Drift автоматически реализует оператор == для данных).
+    if (oldWidget.activeObject != widget.activeObject) {
+      debugPrint('✅ [DEBUG] Данные объекта изменились. Принудительный пересчет времени.');
       _recalculateElapsed();
     }
   }
@@ -56,7 +56,6 @@ class _ActiveObjectFilledBlockState extends State<ActiveObjectFilledBlock> {
       setState(() {
         _elapsed = DateTime.now().difference(start);
       });
-      debugPrint('⏱️ [DEBUG] Время пересчитано: $_elapsed');
     }
   }
 

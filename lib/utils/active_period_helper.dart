@@ -1,6 +1,5 @@
 // lib/utils/active_period_helper.dart
 import 'dart:convert';
-import '../database/app_database.dart';
 
 /// Модель одного периода активности.
 class ActivePeriod {
@@ -38,25 +37,22 @@ class ActivePeriodHelper {
       jsonEncode(periods.map((e) => e.toJson()).toList());
 
   /// Рассчитывает суммарное время, проведенное в статусе "Активен".
-  static Duration calculateTotalActiveTime(
-    List<ActivePeriod> periods,
-    DateTime? currentStartDate,
-    HobbyObjectStatus currentStatus,
-  ) {
+  /// ✅ ИСПРАВЛЕНО: Теперь опирается ТОЛЬКО на список periods, игнорируя общую startDate объекта.
+  static Duration calculateTotalActiveTime(List<ActivePeriod> periods) {
     Duration total = Duration.zero;
-    
-    // 1. Суммируем все завершенные периоды
+    final now = DateTime.now();
+
     for (var p in periods) {
       if (p.end != null) {
+        // 1. Суммируем все закрытые периоды активности
         total += p.end!.difference(p.start);
+      } else {
+        // 2. Если период открыт (end == null), это текущий активный период.
+        // Считаем время от начала этого конкретного периода до текущего момента.
+        total += now.difference(p.start);
       }
     }
-    
-    // 2. Если объект сейчас активен, добавляем текущий незавершенный период
-    if (currentStatus == HobbyObjectStatus.active && currentStartDate != null) {
-      total += DateTime.now().difference(currentStartDate);
-    }
-    
+
     return total;
   }
 }
