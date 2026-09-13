@@ -37,20 +37,35 @@ class _ActiveObjectScreenState extends State<ActiveObjectScreen> {
 
   // ✅ Загружает и заметки, и свежую версию объекта из БД
   Future<void> _loadAllData() async {
-    final notes = await _noteRepo.getNotesByObjectId(widget.object.id);
-    final freshObject = await (db.select(db.hobbyObjects)..where((t) => t.id.equals(widget.object.id))).getSingle();
-    
-    if (mounted) {
-      setState(() {
-        _currentObject = freshObject;
-        _notes = notes;
-        _isLoading = false;
-      });
+    try {
+      final notes = await _noteRepo.getNotesByObjectId(widget.object.id);
+      final freshObject = await (db.select(db.hobbyObjects)..where((t) => t.id.equals(widget.object.id))).getSingle();
+      
+      if (mounted) {
+        setState(() {
+          _currentObject = freshObject;
+          _notes = notes;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      // ✅ ИСПРАВЛЕНО: Перехватываем ошибки. 
+      // Это не дает RefreshIndicator "упасть" и отменить анимацию.
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка обновления данных: ${e.toString()}')),
+        );
+      }
     }
   }
 
   // ✅ Теперь свайп обновляет ВСЁ, а не только заметки
   Future<void> _onRefresh() async {
+    // Вызываем загрузку. Благодаря try-catch внутри, этот Future всегда завершается успешно,
+    // что позволяет RefreshIndicator корректно завершить анимацию.
     await _loadAllData();
   }
 
@@ -92,7 +107,6 @@ class _ActiveObjectScreenState extends State<ActiveObjectScreen> {
       if (mounted) {
         HapticFeedback.mediumImpact();
         await _loadAllData();
-        // ✅ ДОБАВЛЕНО: Вторая проверка mounted после асинхронного вызова
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Эмодзи обновлен'), duration: Duration(seconds: 1)),
@@ -127,7 +141,6 @@ class _ActiveObjectScreenState extends State<ActiveObjectScreen> {
       if (mounted) {
         HapticFeedback.mediumImpact();
         await _loadAllData();
-        // ✅ ДОБАВЛЕНО: Вторая проверка mounted после асинхронного вызова
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Название обновлено'), duration: Duration(seconds: 1)),

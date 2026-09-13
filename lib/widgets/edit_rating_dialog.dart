@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 /// Диалоговое окно для выбора оценки от 1 до 10.
-/// Использует Wrap и фиксированный безопасный размер для 100% стабильности внутри AlertDialog.
+/// Гарантированно отображает 5 звезд в верхнем ряду и 5 в нижнем для идеальной симметрии.
 class EditRatingDialog extends StatefulWidget {
   final int initialRating;
   
@@ -29,31 +29,62 @@ class _EditRatingDialogState extends State<EditRatingDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     
-    // ✅ ИСПРАВЛЕНО: Фиксированный безопасный размер. 
-    // 10 звезд по 28px + отступы = ~320px. Это гарантированно влезает в любой AlertDialog на любом телефоне.
-    const double starSize = 28.0;
+    // ✅ Увеличили размер до 32.0. Так как в ряду теперь только 5 звезд, 
+    // они отлично помещаются и по ним гораздо удобнее попадать пальцем.
+    const double starSize = 32.0;
     
     return AlertDialog(
       title: const Text('Изменить оценку'),
-      // ✅ ИСПРАВЛЕНО: Wrap вместо LayoutBuilder. Это предотвращает ошибки рендеринга с бесконечными ограничениями.
-      content: Wrap(
-        alignment: WrapAlignment.center,
-        spacing: 4.0,
-        runSpacing: 4.0,
-        children: List.generate(10, (i) {
-          final isFilled = i < _tempRating;
-          return GestureDetector(
-            onTap: () {
-              HapticFeedback.lightImpact();
-              setState(() => _tempRating = i + 1);
-            },
-            child: Icon(
-              isFilled ? Icons.star : Icons.star_border,
-              size: starSize,
-              color: isFilled ? Colors.amber : theme.colorScheme.outline,
-            ),
-          );
-        }),
+      // ✅ ИСПРАВЛЕНО: Column с двумя Row вместо Wrap. 
+      // Это гарантирует строго 5 звезд сверху и 5 снизу на любом экране.
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Верхний ряд (звезды 1-5)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(5, (i) {
+              final isFilled = i < _tempRating;
+              return GestureDetector(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  setState(() => _tempRating = i + 1);
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                  child: Icon(
+                    isFilled ? Icons.star : Icons.star_border,
+                    size: starSize,
+                    color: isFilled ? Colors.amber : theme.colorScheme.outline,
+                  ),
+                ),
+              );
+            }),
+          ),
+          const SizedBox(height: 8.0), // Отступ между рядами
+          // Нижний ряд (звезды 6-10)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(5, (i) {
+              final starIndex = i + 5; // 5, 6, 7, 8, 9
+              final isFilled = starIndex < _tempRating;
+              return GestureDetector(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  setState(() => _tempRating = starIndex + 1);
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                  child: Icon(
+                    isFilled ? Icons.star : Icons.star_border,
+                    size: starSize,
+                    color: isFilled ? Colors.amber : theme.colorScheme.outline,
+                  ),
+                ),
+              );
+            }),
+          ),
+        ],
       ),
       actions: [
         TextButton(
