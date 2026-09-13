@@ -6,7 +6,6 @@ import '../database/app_database.dart';
 import '../utils/elapsed_time_formatter.dart';
 
 /// Градиентный блок активного объекта с живым счётчиком времени.
-/// Обновляет отображение прошедшего времени каждую минуту.
 class ActiveObjectFilledBlock extends StatefulWidget {
   final HobbyObject activeObject;
   final VoidCallback onTapObject;
@@ -30,6 +29,7 @@ class _ActiveObjectFilledBlockState extends State<ActiveObjectFilledBlock> {
   @override
   void initState() {
     super.initState();
+    debugPrint('🚀 [DEBUG] ActiveObjectFilledBlock: initState вызван! Дата: ${widget.activeObject.startDate}');
     _recalculateElapsed();
     _startTimer();
   }
@@ -37,7 +37,11 @@ class _ActiveObjectFilledBlockState extends State<ActiveObjectFilledBlock> {
   @override
   void didUpdateWidget(ActiveObjectFilledBlock oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.activeObject.id != widget.activeObject.id) {
+    debugPrint('🔄 [DEBUG] ActiveObjectFilledBlock: didUpdateWidget! Старая дата: ${oldWidget.activeObject.startDate}, Новая дата: ${widget.activeObject.startDate}');
+    
+    // Если дата изменилась, принудительно пересчитываем время
+    if (oldWidget.activeObject.startDate != widget.activeObject.startDate) {
+      debugPrint('✅ [DEBUG] Дата изменилась! Принудительный пересчет времени.');
       _recalculateElapsed();
     }
   }
@@ -45,25 +49,27 @@ class _ActiveObjectFilledBlockState extends State<ActiveObjectFilledBlock> {
   void _recalculateElapsed() {
     final start = widget.activeObject.startDate;
     if (start == null) {
-      setState(() => _elapsed = Duration.zero);
+      if (mounted) setState(() => _elapsed = Duration.zero);
       return;
     }
-    setState(() {
-      _elapsed = DateTime.now().difference(start);
-    });
+    if (mounted) {
+      setState(() {
+        _elapsed = DateTime.now().difference(start);
+      });
+      debugPrint('⏱️ [DEBUG] Время пересчитано: $_elapsed');
+    }
   }
 
   void _startTimer() {
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(minutes: 1), (_) {
-      if (!mounted) return;
-      _recalculateElapsed();
+      if (mounted) _recalculateElapsed();
     });
   }
 
   @override
   void dispose() {
-    _timer?.cancel(); // Критично: предотвращает утечку памяти
+    _timer?.cancel();
     super.dispose();
   }
 

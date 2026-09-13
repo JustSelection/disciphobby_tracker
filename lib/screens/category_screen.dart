@@ -35,6 +35,8 @@ class _CategoryScreenState extends State<CategoryScreen> {
   }
 
   Future<void> _loadObjects() async {
+    debugPrint('🔄 [DEBUG] CategoryScreen: _loadObjects вызван!');
+    
     final results = await Future.wait([
       _objectRepo.getObjectsByStatus(widget.category.id, HobbyObjectStatus.active),
       _objectRepo.getObjectsByStatus(widget.category.id, HobbyObjectStatus.queued),
@@ -43,10 +45,27 @@ class _CategoryScreenState extends State<CategoryScreen> {
     ]);
 
     if (!mounted) return;
+    
+    if (results[0].isNotEmpty) {
+      debugPrint('📅 [DEBUG] Дата startDate АКТИВНОГО объекта, которую вернула БД: ${results[0].first.startDate}');
+    } else {
+      debugPrint('📅 [DEBUG] Активных объектов в этой категории нет.');
+    }
+    
+    debugPrint('✅ [DEBUG] CategoryScreen: Вызываем setState с новыми данными.');
     setState(() {
       _allObjects = [...results[0], ...results[1], ...results[2], ...results[3]];
       _isLoading = false;
     });
+  }
+
+  // ✅ НОВОЕ: Выделенный метод для свайпа, ТОЧНО КАК в ActiveObjectScreen
+  Future<void> _onRefresh() async {
+    debugPrint('👆 [DEBUG] Свайп распознан! Начинаем обновление...');
+    // Та самая задержка, которая позволяет индикатору отрисоваться и данным обновиться
+    await Future.delayed(const Duration(milliseconds: 300));
+    await _loadObjects();
+    debugPrint('🏁 [DEBUG] Обновление категории завершено.');
   }
 
   List<HobbyObject> _objectsByStatus(HobbyObjectStatus status) =>
@@ -79,6 +98,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Категория успешно обновлена'), duration: Duration(seconds: 1)),
       );
+      await _loadObjects();
     }
   }
 
@@ -126,9 +146,11 @@ class _CategoryScreenState extends State<CategoryScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
-              onRefresh: _loadObjects,
+              // ✅ ИСПРАВЛЕНО: Используем новый метод _onRefresh с задержкой
+              onRefresh: _onRefresh,
               child: CustomScrollView(
-                physics: const BouncingScrollPhysics(),
+                // ✅ ИСПРАВЛЕНО: Точно как в работающем active_object_screen_body.dart
+                physics: const AlwaysScrollableScrollPhysics(),
                 slivers: [
                   SliverPadding(
                     padding: const EdgeInsets.all(16),
@@ -149,7 +171,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
                         CompletedPreviewWidget(
                           completedObjects: completed, 
                           categoryId: widget.category.id, 
-                          categoryName: widget.category.name, // ДОБАВЛЕНО
+                          categoryName: widget.category.name,
                         ),
                         const SizedBox(height: 32),
                       ]),

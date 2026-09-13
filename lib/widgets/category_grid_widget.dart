@@ -20,15 +20,16 @@ class CategoryGridWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
+      // ✅ Внешний отступ равен расстоянию между плитками (12.0)
+      // Это гарантирует, что отступ от края экрана до первой плитки такой же, как между плитками.
       padding: const EdgeInsets.all(12.0),
       child: GridView.builder(
         itemCount: categories.length,
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          // ✅ ПУНКТ 1: 1.0 -> 0.85. Убирает огромные вертикальные пробелы между плитками
-          childAspectRatio: 0.85, 
+          crossAxisCount: 2,          // 2 колонки
+          crossAxisSpacing: 12,       // Расстояние между колонками
+          mainAxisSpacing: 12,        // Расстояние между рядами
+          childAspectRatio: 1.0,      // ✅ ДЕЛАЕМ ИДЕАЛЬНЫЙ КВАДРАТ (ширина = высоте)
         ),
         itemBuilder: (context, index) {
           final category = categories[index];

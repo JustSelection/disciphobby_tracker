@@ -28,20 +28,19 @@ class ActiveObjectScreenBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ✅ Пока идет загрузка, показываем индикатор
     if (isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    // ✅ RefreshIndicator оборачивает скролл.
     return RefreshIndicator(
       onRefresh: onRefresh,
-      // Добавляем ключ, чтобы виджет не терял состояние при перерисовке
-      key: const Key('refresh_indicator_key'),
+      // ✅ УБРАНО: key: const Key('refresh_indicator_key'). 
+      // Он не нужен и мог сбрасывать внутреннее состояние анимации индикатора.
       child: CustomScrollView(
-        // ✅ ИСПРАВЛЕНО: Комбинация физик гарантирует, что свайп вниз сработает 
-        // даже если контента (заметок) очень мало и он не занимает весь экран.
-        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        // ✅ ИСПРАВЛЕНО: Оставляем только AlwaysScrollableScrollPhysics. 
+        // Это самая стабильная физика, которая гарантированно позволяет сделать 
+        // "pull-to-refresh" даже если контента на экране меньше высоты дисплея.
+        physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
           SliverToBoxAdapter(
             child: ActiveObjectHeaderWidget(
@@ -52,8 +51,7 @@ class ActiveObjectScreenBody extends StatelessWidget {
             ),
           ),
           ActiveObjectNotesListWidget(notes: notes, onNoteTap: onNoteTap),
-          // ✅ ИСПРАВЛЕНО: Увеличен отступ до 150, чтобы гарантировать, что общая высота 
-          // контента всегда больше высоты экрана, делая свайп вниз возможным всегда.
+          // ✅ Оставляем увеличенный отступ, чтобы гарантировать наличие скролла
           const SliverToBoxAdapter(child: SizedBox(height: 150)),
         ],
       ),

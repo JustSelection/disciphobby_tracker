@@ -23,11 +23,9 @@ class ActiveObjectBlock extends StatelessWidget {
     required this.onObjectChanged,
   });
 
-  /// ✅ Шаг 11: Переход на экран активного объекта (Сцена 4) с обновлением после возврата.
   Future<void> _onTapObject(BuildContext context) async {
     if (activeObjects.isEmpty) return;
     
-    // ✅ ДОБАВЛЕНО await: мы ждем, пока пользователь закроет экран
     await Navigator.push(
       context,
       MaterialPageRoute(
@@ -35,12 +33,9 @@ class ActiveObjectBlock extends StatelessWidget {
       ),
     );
     
-    // ✅ ДОБАВЛЕНО: после закрытия экрана принудительно обновляем данные в CategoryScreen
-    // Это гарантирует, что если объект вернули в очередь или изменили, список обновится
     onObjectChanged();
   }
 
-  /// ✅ Шаг 15: Переход на ритуал завершения (Сцена 5) с гарантированным обновлением.
   Future<void> _onFinishObject(BuildContext context) async {
     if (activeObjects.isEmpty) return;
     
@@ -49,16 +44,14 @@ class ActiveObjectBlock extends StatelessWidget {
       MaterialPageRoute(
         builder: (context) => CompletionFlowScreen(
           object: activeObjects.first,
-          onCompleted: onObjectChanged, // Обновляем список внутри потока завершения
+          onCompleted: onObjectChanged,
         ),
       ),
     );
     
-    // ✅ ДОБАВЛЕНО: дополнительная гарантия обновления UI после закрытия экрана завершения
     onObjectChanged();
   }
 
-  /// ✅ Шаг 10: Реализация диалога выбора из очереди.
   Future<void> _onChooseFromQueue(BuildContext context) async {
     HapticFeedback.selectionClick();
     final repo = HobbyObjectRepository(db);
@@ -95,7 +88,6 @@ class ActiveObjectBlock extends StatelessWidget {
 
     if (chosen != null && context.mounted) {
       HapticFeedback.mediumImpact();
-      // Обновляем статус на active и фиксируем дату начала
       await (db.update(db.hobbyObjects)..where((t) => t.id.equals(chosen.id))).write(
         HobbyObjectsCompanion(
           status: drift.Value(HobbyObjectStatus.active),
@@ -103,7 +95,7 @@ class ActiveObjectBlock extends StatelessWidget {
           updatedAt: drift.Value(DateTime.now()),
         ),
       );
-      onObjectChanged(); // Триггерим обновление UI
+      onObjectChanged();
     }
   }
 
@@ -116,7 +108,12 @@ class ActiveObjectBlock extends StatelessWidget {
     }
 
     final activeObject = activeObjects.first;
+    
     return ActiveObjectFilledBlock(
+      // ✅ КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: 
+      // Этот ключ заставляет Flutter полностью уничтожить старый виджет и создать новый,
+      // если изменилась дата начала. Это мгновенно сбрасывает таймер и пересчитывает время.
+      key: ValueKey('active_${activeObject.id}_${activeObject.startDate?.millisecondsSinceEpoch}'),
       activeObject: activeObject,
       onTapObject: () => _onTapObject(context),
       onFinishObject: () => _onFinishObject(context),
