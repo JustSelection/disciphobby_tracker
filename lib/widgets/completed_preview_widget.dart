@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../database/app_database.dart';
 import '../utils/elapsed_time_formatter.dart';
+import '../utils/active_period_helper.dart'; // ✅ ДОБАВЛЕНО: для получения истинной даты начала
 import '../screens/archive_screen.dart';
 import '../screens/summary_screen.dart';
 
@@ -110,8 +111,14 @@ class _CompletedPreviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final period = object.startDate != null && object.endDate != null
-        ? ElapsedTimeFormatter.formatPeriod(object.startDate!, object.endDate!)
+    
+    // ✅ ИСПРАВЛЕНО: Берем истинную дату начала из самого первого периода активности.
+    // Если история пуста (старые данные), используем object.startDate как запасной вариант.
+    final periods = ActivePeriodHelper.parse(object.activePeriods);
+    final trueStartDate = periods.isNotEmpty ? periods.first.start : object.startDate;
+
+    final period = trueStartDate != null && object.endDate != null
+        ? ElapsedTimeFormatter.formatPeriod(trueStartDate, object.endDate!)
         : 'Дата не указана';
 
     return GestureDetector(
@@ -144,7 +151,6 @@ class _CompletedPreviewCard extends StatelessWidget {
                     object.name,
                     style: theme.textTheme.bodyLarge?.copyWith(
                       fontWeight: FontWeight.w600,
-                      // ✅ УДАЛЕНО: decoration: TextDecoration.lineThrough и decorationColor
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
