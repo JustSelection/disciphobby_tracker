@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import '../database/app_database.dart';
 import '../utils/elapsed_time_formatter.dart';
 import '../screens/archive_screen.dart';
-import '../screens/summary_screen.dart'; // ✅ ДОБАВЛЕНО: для прямого перехода к сводке
+import '../screens/summary_screen.dart';
 
 /// Блок превью завершенных объектов (Сцена 3).
 class CompletedPreviewWidget extends StatelessWidget {
@@ -114,7 +114,6 @@ class _CompletedPreviewCard extends StatelessWidget {
         ? ElapsedTimeFormatter.formatPeriod(object.startDate!, object.endDate!)
         : 'Дата не указана';
 
-    // ✅ ДОБАВЛЕНО: GestureDetector для обработки тапа по всей карточке
     return GestureDetector(
       onTap: () {
         HapticFeedback.selectionClick();
@@ -145,8 +144,7 @@ class _CompletedPreviewCard extends StatelessWidget {
                     object.name,
                     style: theme.textTheme.bodyLarge?.copyWith(
                       fontWeight: FontWeight.w600,
-                      decoration: TextDecoration.lineThrough,
-                      decorationColor: theme.colorScheme.outline,
+                      // ✅ УДАЛЕНО: decoration: TextDecoration.lineThrough и decorationColor
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

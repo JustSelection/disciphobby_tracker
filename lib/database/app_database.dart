@@ -1,3 +1,4 @@
+// lib/database/app_database.dart
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
@@ -20,7 +21,6 @@ class HobbyObjects extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get categoryId => integer()();
   
-  // Исправлено: передаем .index для корректной работы intEnum с дефолтным значением
   IntColumn get status => intEnum<HobbyObjectStatus>()
       .withDefault(Constant(HobbyObjectStatus.queued.index))();
       
@@ -30,6 +30,10 @@ class HobbyObjects extends Table {
   DateTimeColumn get endDate => dateTime().nullable()();
   TextColumn get reviewText => text().nullable()();
   IntColumn get rating => integer().nullable()();
+  
+  // ✅ НОВОЕ: Хранит JSON-массив периодов активности для точного подсчета времени
+  TextColumn get activePeriods => text().nullable()();
+  
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 }
@@ -37,11 +41,7 @@ class HobbyObjects extends Table {
 class Notes extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get objectId => integer()();
-  
-  // Исправлено: переименовано из 'text' в 'content', чтобы не конфликтовать 
-  // с методом text() базового класса Table
   TextColumn get content => text()();
-  
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 }
@@ -50,8 +50,25 @@ class Notes extends Table {
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
+  // ✅ УВЕЛИЧЕНО: Версия схемы с 1 до 2
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  // ✅ НОВОЕ: Стратегия миграции для добавления нового поля без потери данных
+  @override
+  MigrationStrategy get migration {
+    return MigrationStrategy(
+      onCreate: (Migrator m) async {
+        await m.createAll();
+      },
+      onUpgrade: (Migrator m, int from, int to) async {
+        if (from < 2) {
+          // Добавляем новый столбец для существующих баз данных
+          await m.addColumn(hobbyObjects, hobbyObjects.activePeriods);
+        }
+      },
+    );
+  }
 }
 
 LazyDatabase _openConnection() {

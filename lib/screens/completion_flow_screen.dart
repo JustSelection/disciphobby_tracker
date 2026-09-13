@@ -6,6 +6,7 @@ import '../database/app_database.dart';
 import '../main.dart';
 import '../repositories/hobby_object_repository.dart';
 import '../repositories/note_repository.dart';
+import '../utils/active_period_helper.dart'; // ✅ ИМПОРТ ПОМОЩНИКА
 import '../widgets/review_step_widget.dart';
 import '../widgets/rating_step_widget.dart';
 import '../widgets/next_object_step_widget.dart';
@@ -62,31 +63,44 @@ class _CompletionFlowScreenState extends State<CompletionFlowScreen> {
     setState(() => _currentStep--);
   }
 
-  // ⚠️ КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Явно устанавливаем статус completed и дату окончания
+  // ✅ ОБНОВЛЕНО: Сохраняем финальный активный период в историю
   Future<void> _finishAndRate() async {
     if (_rating == null) return;
     HapticFeedback.mediumImpact();
     
-    // Мы обновляем поля напрямую, чтобы ГАРАНТИРОВАТЬ смену статуса и даты
+    final now = DateTime.now();
+    
+    // 1. Получаем текущую историю периодов
+    final periods = ActivePeriodHelper.parse(widget.object.activePeriods);
+    
+    // 2. Если есть дата начала, добавляем финальный отрезок до текущего момента
+    if (widget.object.startDate != null) {
+      periods.add(ActivePeriod(start: widget.object.startDate!, end: now));
+    }
+    
+    // 3. Преобразуем обратно в JSON
+    final newPeriodsJson = ActivePeriodHelper.toJson(periods);
+
+    // 4. Обновляем объект в БД
     await (db.update(db.hobbyObjects)..where((t) => t.id.equals(widget.object.id))).write(
       HobbyObjectsCompanion(
-        status: drift.Value(HobbyObjectStatus.completed), // <-- ЭТО ГЛАВНОЕ
-        endDate: drift.Value(DateTime.now()),             // <-- И ЭТО
+        status: drift.Value(HobbyObjectStatus.completed),
+        endDate: drift.Value(now),
         reviewText: drift.Value(_reviewText),
         rating: drift.Value(_rating),
-        updatedAt: drift.Value(DateTime.now()),
+        activePeriods: drift.Value(newPeriodsJson), // ✅ СОХРАНЯЕМ ИСТОРИЮ
+        updatedAt: drift.Value(now),
       ),
     );
     
     if (mounted) setState(() => _currentStep = 3);
   }
 
-  // ✅ Надежный метод закрытия с обновлением родителя
   void _closeAndRefresh() {
-    widget.onCompleted(); // 1. Триггерим перезагрузку списков в CategoryScreen
     if (mounted) {
-      Navigator.pop(context); // 2. Закрываем экран
+      Navigator.pop(context);
     }
+    widget.onCompleted();
   }
 
   Future<void> _activateNextObject(HobbyObject nextObj) async {

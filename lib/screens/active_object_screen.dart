@@ -6,10 +6,7 @@ import '../database/app_database.dart';
 import '../main.dart';
 import '../repositories/note_repository.dart';
 import '../services/emoji_picker_service.dart';
-import '../utils/elapsed_time_formatter.dart';
-import '../widgets/stat_card_widget.dart';
-import '../widgets/diary_zero_state.dart';
-import '../widgets/note_card_widget.dart';
+import '../widgets/active_object_screen_body.dart';
 import '../widgets/create_note_dialog.dart';
 import 'completion_flow_screen.dart';
 
@@ -26,17 +23,35 @@ class _ActiveObjectScreenState extends State<ActiveObjectScreen> {
   late final NoteRepository _noteRepo;
   List<Note> _notes = [];
   bool _isLoading = true;
+  
+  // ✅ Храним актуальную версию объекта в состоянии
+  late HobbyObject _currentObject;
 
   @override
   void initState() {
     super.initState();
     _noteRepo = NoteRepository(db);
-    _loadNotes();
+    _currentObject = widget.object;
+    _loadAllData();
   }
 
-  Future<void> _loadNotes() async {
+  // ✅ Загружает и заметки, и свежую версию объекта из БД
+  Future<void> _loadAllData() async {
     final notes = await _noteRepo.getNotesByObjectId(widget.object.id);
-    if (mounted) setState(() { _notes = notes; _isLoading = false; });
+    final freshObject = await (db.select(db.hobbyObjects)..where((t) => t.id.equals(widget.object.id))).getSingle();
+    
+    if (mounted) {
+      setState(() {
+        _currentObject = freshObject;
+        _notes = notes;
+        _isLoading = false;
+      });
+    }
+  }
+
+  // ✅ Теперь свайп обновляет ВСЁ, а не только заметки
+  Future<void> _onRefresh() async {
+    await _loadAllData();
   }
 
   Future<void> _showAddNoteDialog() async {
@@ -49,7 +64,7 @@ class _ActiveObjectScreenState extends State<ActiveObjectScreen> {
     );
     if (created == true && mounted) {
       HapticFeedback.mediumImpact();
-      await _loadNotes();
+      await _loadAllData();
     }
   }
 
@@ -59,38 +74,37 @@ class _ActiveObjectScreenState extends State<ActiveObjectScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => CompletionFlowScreen(
-          object: widget.object,
-          onCompleted: () {
-            Navigator.of(context).pop(); 
-            Navigator.of(context).pop(); 
-          },
+          object: _currentObject,
+          onCompleted: () {},
         ),
       ),
     );
+    if (mounted) Navigator.of(context).pop();
   }
 
   Future<void> _changeEmoji() async {
     HapticFeedback.selectionClick();
     final newEmoji = await EmojiPickerService.show(context);
-    if (newEmoji != null && newEmoji != widget.object.emoji && mounted) {
-      await (db.update(db.hobbyObjects)..where((t) => t.id.equals(widget.object.id))).write(
-        HobbyObjectsCompanion(
-          emoji: drift.Value(newEmoji),
-          updatedAt: drift.Value(DateTime.now()),
-        ),
+    if (newEmoji != null && newEmoji != _currentObject.emoji && mounted) {
+      await (db.update(db.hobbyObjects)..where((t) => t.id.equals(_currentObject.id))).write(
+        HobbyObjectsCompanion(emoji: drift.Value(newEmoji), updatedAt: drift.Value(DateTime.now())),
       );
       if (mounted) {
         HapticFeedback.mediumImpact();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Эмодзи обновлен'), duration: Duration(seconds: 1)),
-        );
+        await _loadAllData();
+        // ✅ ДОБАВЛЕНО: Вторая проверка mounted после асинхронного вызова
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Эмодзи обновлен'), duration: Duration(seconds: 1)),
+          );
+        }
       }
     }
   }
 
   Future<void> _editObjectName() async {
     HapticFeedback.selectionClick();
-    final controller = TextEditingController(text: widget.object.name);
+    final controller = TextEditingController(text: _currentObject.name);
     final newName = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -102,95 +116,61 @@ class _ActiveObjectScreenState extends State<ActiveObjectScreen> {
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена')),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: const Text('Сохранить'),
-          ),
+          FilledButton(onPressed: () => Navigator.pop(ctx, controller.text.trim()), child: const Text('Сохранить')),
         ],
       ),
     );
-
-    if (newName != null && newName.isNotEmpty && newName != widget.object.name && mounted) {
-      await (db.update(db.hobbyObjects)..where((t) => t.id.equals(widget.object.id))).write(
-        HobbyObjectsCompanion(
-          name: drift.Value(newName),
-          updatedAt: drift.Value(DateTime.now()),
-        ),
+    if (newName != null && newName.isNotEmpty && newName != _currentObject.name && mounted) {
+      await (db.update(db.hobbyObjects)..where((t) => t.id.equals(_currentObject.id))).write(
+        HobbyObjectsCompanion(name: drift.Value(newName), updatedAt: drift.Value(DateTime.now())),
       );
       if (mounted) {
         HapticFeedback.mediumImpact();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Название обновлено'), duration: Duration(seconds: 1)),
-        );
+        await _loadAllData();
+        // ✅ ДОБАВЛЕНО: Вторая проверка mounted после асинхронного вызова
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Название обновлено'), duration: Duration(seconds: 1)),
+          );
+        }
       }
+    }
+  }
+
+  Future<void> _editNote(Note note) async {
+    final ctrl = TextEditingController(text: note.content);
+    final res = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Заметка'),
+        content: TextField(controller: ctrl, maxLines: 5, autofocus: true, decoration: const InputDecoration(labelText: 'Текст')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, ctrl.text.trim()), child: const Text('Сохранить')),
+        ],
+      ),
+    );
+    if (res != null && res.isNotEmpty && res != note.content && mounted) {
+      await (db.update(db.notes)..where((t) => t.id.equals(note.id))).write(
+        NotesCompanion(content: drift.Value(res), updatedAt: drift.Value(DateTime.now())),
+      );
+      if (mounted) await _loadAllData();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Scaffold(
-      // ✅ УБРАНО: actions с кнопкой "Вернуть в очередь"
-      appBar: AppBar(
-        title: const Text('Активный объект', overflow: TextOverflow.ellipsis),
+      appBar: AppBar(title: const Text('Активный объект', overflow: TextOverflow.ellipsis)),
+      body: ActiveObjectScreenBody(
+        isLoading: _isLoading,
+        notes: _notes,
+        object: _currentObject,
+        onRefresh: _onRefresh,
+        onEmojiTap: _changeEmoji,
+        onNameTap: _editObjectName,
+        onNoteTap: _editNote,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      children: [
-                        GestureDetector(
-                          onTap: _changeEmoji,
-                          child: Text(widget.object.emoji, style: const TextStyle(fontSize: 120)),
-                        ),
-                        const SizedBox(height: 16),
-                        GestureDetector(
-                          onTap: _editObjectName,
-                          child: Text(
-                            widget.object.name,
-                            style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        Row(
-                          children: [
-                            Expanded(child: StatCardWidget(label: 'Начало', value: widget.object.startDate != null ? ElapsedTimeFormatter.formatShortDate(widget.object.startDate!) : 'Не указано')),
-                            const SizedBox(width: 16),
-                            Expanded(child: StatCardWidget(label: 'В процессе', value: widget.object.startDate != null ? ElapsedTimeFormatter.formatElapsed(DateTime.now().difference(widget.object.startDate!)) : '0 дней')),
-                          ],
-                        ),
-                        const SizedBox(height: 32),
-                        Row(
-                          children: [
-                            Text('Дневник', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(color: theme.colorScheme.secondaryContainer, borderRadius: BorderRadius.circular(12)),
-                              child: Text('${_notes.length}', style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSecondaryContainer)),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                    ),
-                  ),
-                ),
-                if (_notes.isEmpty)
-                  const SliverToBoxAdapter(child: DiaryZeroState())
-                else
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    sliver: SliverList(delegate: SliverChildBuilderDelegate((context, index) => NoteCardWidget(note: _notes[index]), childCount: _notes.length)),
-                  ),
-                const SliverToBoxAdapter(child: SizedBox(height: 100)),
-              ],
-            ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showAddNoteDialog,
         icon: const Icon(Icons.add),

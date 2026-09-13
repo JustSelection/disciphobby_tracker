@@ -153,6 +153,9 @@ late final GeneratedColumn<String> reviewText = GeneratedColumn<String>('review_
 static const VerificationMeta _ratingMeta = const VerificationMeta('rating');
 @override
 late final GeneratedColumn<int> rating = GeneratedColumn<int>('rating', aliasedName, true, type: DriftSqlType.int, requiredDuringInsert: false);
+static const VerificationMeta _activePeriodsMeta = const VerificationMeta('activePeriods');
+@override
+late final GeneratedColumn<String> activePeriods = GeneratedColumn<String>('active_periods', aliasedName, true, type: DriftSqlType.string, requiredDuringInsert: false);
 static const VerificationMeta _createdAtMeta = const VerificationMeta('createdAt');
 @override
 late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>('created_at', aliasedName, false, type: DriftSqlType.dateTime, requiredDuringInsert: false, defaultValue: currentDateAndTime);
@@ -160,7 +163,7 @@ static const VerificationMeta _updatedAtMeta = const VerificationMeta('updatedAt
 @override
 late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>('updated_at', aliasedName, false, type: DriftSqlType.dateTime, requiredDuringInsert: false, defaultValue: currentDateAndTime);
 @override
-List<GeneratedColumn> get $columns => [id, categoryId, status, name, emoji, startDate, endDate, reviewText, rating, createdAt, updatedAt];
+List<GeneratedColumn> get $columns => [id, categoryId, status, name, emoji, startDate, endDate, reviewText, rating, activePeriods, createdAt, updatedAt];
 @override
 String get aliasedName => _alias ?? actualTableName;
 @override
@@ -187,14 +190,15 @@ if (data.containsKey('start_date')) {
 context.handle(_startDateMeta, startDate.isAcceptableOrUnknown(data['start_date']!, _startDateMeta));}if (data.containsKey('end_date')) {
 context.handle(_endDateMeta, endDate.isAcceptableOrUnknown(data['end_date']!, _endDateMeta));}if (data.containsKey('review_text')) {
 context.handle(_reviewTextMeta, reviewText.isAcceptableOrUnknown(data['review_text']!, _reviewTextMeta));}if (data.containsKey('rating')) {
-context.handle(_ratingMeta, rating.isAcceptableOrUnknown(data['rating']!, _ratingMeta));}if (data.containsKey('created_at')) {
+context.handle(_ratingMeta, rating.isAcceptableOrUnknown(data['rating']!, _ratingMeta));}if (data.containsKey('active_periods')) {
+context.handle(_activePeriodsMeta, activePeriods.isAcceptableOrUnknown(data['active_periods']!, _activePeriodsMeta));}if (data.containsKey('created_at')) {
 context.handle(_createdAtMeta, createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));}if (data.containsKey('updated_at')) {
 context.handle(_updatedAtMeta, updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));}return context;
 }
 @override
 Set<GeneratedColumn> get $primaryKey => {id};
 @override HobbyObject map(Map<String, dynamic> data, {String? tablePrefix})  {
-final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';return HobbyObject(id: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}id'])!, categoryId: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}category_id'])!, status: $HobbyObjectsTable.$converterstatus.fromSql(attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}status'])!), name: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}name'])!, emoji: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}emoji'])!, startDate: attachedDatabase.typeMapping.read(DriftSqlType.dateTime, data['${effectivePrefix}start_date']), endDate: attachedDatabase.typeMapping.read(DriftSqlType.dateTime, data['${effectivePrefix}end_date']), reviewText: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}review_text']), rating: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}rating']), createdAt: attachedDatabase.typeMapping.read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!, updatedAt: attachedDatabase.typeMapping.read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!, );
+final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';return HobbyObject(id: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}id'])!, categoryId: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}category_id'])!, status: $HobbyObjectsTable.$converterstatus.fromSql(attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}status'])!), name: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}name'])!, emoji: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}emoji'])!, startDate: attachedDatabase.typeMapping.read(DriftSqlType.dateTime, data['${effectivePrefix}start_date']), endDate: attachedDatabase.typeMapping.read(DriftSqlType.dateTime, data['${effectivePrefix}end_date']), reviewText: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}review_text']), rating: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}rating']), activePeriods: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}active_periods']), createdAt: attachedDatabase.typeMapping.read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!, updatedAt: attachedDatabase.typeMapping.read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!, );
 }
 @override
 $HobbyObjectsTable createAlias(String alias) {
@@ -209,9 +213,10 @@ final DateTime? startDate;
 final DateTime? endDate;
 final String? reviewText;
 final int? rating;
+final String? activePeriods;
 final DateTime createdAt;
 final DateTime updatedAt;
-const HobbyObject({required this.id, required this.categoryId, required this.status, required this.name, required this.emoji, this.startDate, this.endDate, this.reviewText, this.rating, required this.createdAt, required this.updatedAt});@override
+const HobbyObject({required this.id, required this.categoryId, required this.status, required this.name, required this.emoji, this.startDate, this.endDate, this.reviewText, this.rating, this.activePeriods, required this.createdAt, required this.updatedAt});@override
 Map<String, Expression> toColumns(bool nullToAbsent) {
 final map = <String, Expression> {};map['id'] = Variable<int>(id);
 map['category_id'] = Variable<int>(categoryId);
@@ -222,28 +227,29 @@ if (!nullToAbsent || startDate != null){map['start_date'] = Variable<DateTime>(s
 }if (!nullToAbsent || endDate != null){map['end_date'] = Variable<DateTime>(endDate);
 }if (!nullToAbsent || reviewText != null){map['review_text'] = Variable<String>(reviewText);
 }if (!nullToAbsent || rating != null){map['rating'] = Variable<int>(rating);
+}if (!nullToAbsent || activePeriods != null){map['active_periods'] = Variable<String>(activePeriods);
 }map['created_at'] = Variable<DateTime>(createdAt);
 map['updated_at'] = Variable<DateTime>(updatedAt);
 return map; 
 }
 HobbyObjectsCompanion toCompanion(bool nullToAbsent) {
-return HobbyObjectsCompanion(id: Value(id),categoryId: Value(categoryId),status: Value(status),name: Value(name),emoji: Value(emoji),startDate: startDate == null && nullToAbsent ? const Value.absent() : Value(startDate),endDate: endDate == null && nullToAbsent ? const Value.absent() : Value(endDate),reviewText: reviewText == null && nullToAbsent ? const Value.absent() : Value(reviewText),rating: rating == null && nullToAbsent ? const Value.absent() : Value(rating),createdAt: Value(createdAt),updatedAt: Value(updatedAt),);
+return HobbyObjectsCompanion(id: Value(id),categoryId: Value(categoryId),status: Value(status),name: Value(name),emoji: Value(emoji),startDate: startDate == null && nullToAbsent ? const Value.absent() : Value(startDate),endDate: endDate == null && nullToAbsent ? const Value.absent() : Value(endDate),reviewText: reviewText == null && nullToAbsent ? const Value.absent() : Value(reviewText),rating: rating == null && nullToAbsent ? const Value.absent() : Value(rating),activePeriods: activePeriods == null && nullToAbsent ? const Value.absent() : Value(activePeriods),createdAt: Value(createdAt),updatedAt: Value(updatedAt),);
 }
 factory HobbyObject.fromJson(Map<String, dynamic> json, {ValueSerializer? serializer}) {
 serializer ??= driftRuntimeOptions.defaultSerializer;
-return HobbyObject(id: serializer.fromJson<int>(json['id']),categoryId: serializer.fromJson<int>(json['categoryId']),status: $HobbyObjectsTable.$converterstatus.fromJson(serializer.fromJson<int>(json['status'])),name: serializer.fromJson<String>(json['name']),emoji: serializer.fromJson<String>(json['emoji']),startDate: serializer.fromJson<DateTime?>(json['startDate']),endDate: serializer.fromJson<DateTime?>(json['endDate']),reviewText: serializer.fromJson<String?>(json['reviewText']),rating: serializer.fromJson<int?>(json['rating']),createdAt: serializer.fromJson<DateTime>(json['createdAt']),updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),);}
+return HobbyObject(id: serializer.fromJson<int>(json['id']),categoryId: serializer.fromJson<int>(json['categoryId']),status: $HobbyObjectsTable.$converterstatus.fromJson(serializer.fromJson<int>(json['status'])),name: serializer.fromJson<String>(json['name']),emoji: serializer.fromJson<String>(json['emoji']),startDate: serializer.fromJson<DateTime?>(json['startDate']),endDate: serializer.fromJson<DateTime?>(json['endDate']),reviewText: serializer.fromJson<String?>(json['reviewText']),rating: serializer.fromJson<int?>(json['rating']),activePeriods: serializer.fromJson<String?>(json['activePeriods']),createdAt: serializer.fromJson<DateTime>(json['createdAt']),updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),);}
 @override Map<String, dynamic> toJson({ValueSerializer? serializer}) {
 serializer ??= driftRuntimeOptions.defaultSerializer;
 return <String, dynamic>{
-'id': serializer.toJson<int>(id),'categoryId': serializer.toJson<int>(categoryId),'status': serializer.toJson<int>($HobbyObjectsTable.$converterstatus.toJson(status)),'name': serializer.toJson<String>(name),'emoji': serializer.toJson<String>(emoji),'startDate': serializer.toJson<DateTime?>(startDate),'endDate': serializer.toJson<DateTime?>(endDate),'reviewText': serializer.toJson<String?>(reviewText),'rating': serializer.toJson<int?>(rating),'createdAt': serializer.toJson<DateTime>(createdAt),'updatedAt': serializer.toJson<DateTime>(updatedAt),};}HobbyObject copyWith({int? id,int? categoryId,HobbyObjectStatus? status,String? name,String? emoji,Value<DateTime?> startDate = const Value.absent(),Value<DateTime?> endDate = const Value.absent(),Value<String?> reviewText = const Value.absent(),Value<int?> rating = const Value.absent(),DateTime? createdAt,DateTime? updatedAt}) => HobbyObject(id: id ?? this.id,categoryId: categoryId ?? this.categoryId,status: status ?? this.status,name: name ?? this.name,emoji: emoji ?? this.emoji,startDate: startDate.present ? startDate.value : this.startDate,endDate: endDate.present ? endDate.value : this.endDate,reviewText: reviewText.present ? reviewText.value : this.reviewText,rating: rating.present ? rating.value : this.rating,createdAt: createdAt ?? this.createdAt,updatedAt: updatedAt ?? this.updatedAt,);HobbyObject copyWithCompanion(HobbyObjectsCompanion data) {
+'id': serializer.toJson<int>(id),'categoryId': serializer.toJson<int>(categoryId),'status': serializer.toJson<int>($HobbyObjectsTable.$converterstatus.toJson(status)),'name': serializer.toJson<String>(name),'emoji': serializer.toJson<String>(emoji),'startDate': serializer.toJson<DateTime?>(startDate),'endDate': serializer.toJson<DateTime?>(endDate),'reviewText': serializer.toJson<String?>(reviewText),'rating': serializer.toJson<int?>(rating),'activePeriods': serializer.toJson<String?>(activePeriods),'createdAt': serializer.toJson<DateTime>(createdAt),'updatedAt': serializer.toJson<DateTime>(updatedAt),};}HobbyObject copyWith({int? id,int? categoryId,HobbyObjectStatus? status,String? name,String? emoji,Value<DateTime?> startDate = const Value.absent(),Value<DateTime?> endDate = const Value.absent(),Value<String?> reviewText = const Value.absent(),Value<int?> rating = const Value.absent(),Value<String?> activePeriods = const Value.absent(),DateTime? createdAt,DateTime? updatedAt}) => HobbyObject(id: id ?? this.id,categoryId: categoryId ?? this.categoryId,status: status ?? this.status,name: name ?? this.name,emoji: emoji ?? this.emoji,startDate: startDate.present ? startDate.value : this.startDate,endDate: endDate.present ? endDate.value : this.endDate,reviewText: reviewText.present ? reviewText.value : this.reviewText,rating: rating.present ? rating.value : this.rating,activePeriods: activePeriods.present ? activePeriods.value : this.activePeriods,createdAt: createdAt ?? this.createdAt,updatedAt: updatedAt ?? this.updatedAt,);HobbyObject copyWithCompanion(HobbyObjectsCompanion data) {
 return HobbyObject(
-id: data.id.present ? data.id.value : this.id,categoryId: data.categoryId.present ? data.categoryId.value : this.categoryId,status: data.status.present ? data.status.value : this.status,name: data.name.present ? data.name.value : this.name,emoji: data.emoji.present ? data.emoji.value : this.emoji,startDate: data.startDate.present ? data.startDate.value : this.startDate,endDate: data.endDate.present ? data.endDate.value : this.endDate,reviewText: data.reviewText.present ? data.reviewText.value : this.reviewText,rating: data.rating.present ? data.rating.value : this.rating,createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,);
+id: data.id.present ? data.id.value : this.id,categoryId: data.categoryId.present ? data.categoryId.value : this.categoryId,status: data.status.present ? data.status.value : this.status,name: data.name.present ? data.name.value : this.name,emoji: data.emoji.present ? data.emoji.value : this.emoji,startDate: data.startDate.present ? data.startDate.value : this.startDate,endDate: data.endDate.present ? data.endDate.value : this.endDate,reviewText: data.reviewText.present ? data.reviewText.value : this.reviewText,rating: data.rating.present ? data.rating.value : this.rating,activePeriods: data.activePeriods.present ? data.activePeriods.value : this.activePeriods,createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,);
 }
 @override
-String toString() {return (StringBuffer('HobbyObject(')..write('id: $id, ')..write('categoryId: $categoryId, ')..write('status: $status, ')..write('name: $name, ')..write('emoji: $emoji, ')..write('startDate: $startDate, ')..write('endDate: $endDate, ')..write('reviewText: $reviewText, ')..write('rating: $rating, ')..write('createdAt: $createdAt, ')..write('updatedAt: $updatedAt')..write(')')).toString();}
+String toString() {return (StringBuffer('HobbyObject(')..write('id: $id, ')..write('categoryId: $categoryId, ')..write('status: $status, ')..write('name: $name, ')..write('emoji: $emoji, ')..write('startDate: $startDate, ')..write('endDate: $endDate, ')..write('reviewText: $reviewText, ')..write('rating: $rating, ')..write('activePeriods: $activePeriods, ')..write('createdAt: $createdAt, ')..write('updatedAt: $updatedAt')..write(')')).toString();}
 @override
- int get hashCode => Object.hash(id, categoryId, status, name, emoji, startDate, endDate, reviewText, rating, createdAt, updatedAt);@override
-bool operator ==(Object other) => identical(this, other) || (other is HobbyObject && other.id == this.id && other.categoryId == this.categoryId && other.status == this.status && other.name == this.name && other.emoji == this.emoji && other.startDate == this.startDate && other.endDate == this.endDate && other.reviewText == this.reviewText && other.rating == this.rating && other.createdAt == this.createdAt && other.updatedAt == this.updatedAt);
+ int get hashCode => Object.hash(id, categoryId, status, name, emoji, startDate, endDate, reviewText, rating, activePeriods, createdAt, updatedAt);@override
+bool operator ==(Object other) => identical(this, other) || (other is HobbyObject && other.id == this.id && other.categoryId == this.categoryId && other.status == this.status && other.name == this.name && other.emoji == this.emoji && other.startDate == this.startDate && other.endDate == this.endDate && other.reviewText == this.reviewText && other.rating == this.rating && other.activePeriods == this.activePeriods && other.createdAt == this.createdAt && other.updatedAt == this.updatedAt);
 }class HobbyObjectsCompanion extends UpdateCompanion<HobbyObject> {
 final Value<int> id;
 final Value<int> categoryId;
@@ -254,10 +260,11 @@ final Value<DateTime?> startDate;
 final Value<DateTime?> endDate;
 final Value<String?> reviewText;
 final Value<int?> rating;
+final Value<String?> activePeriods;
 final Value<DateTime> createdAt;
 final Value<DateTime> updatedAt;
-const HobbyObjectsCompanion({this.id = const Value.absent(),this.categoryId = const Value.absent(),this.status = const Value.absent(),this.name = const Value.absent(),this.emoji = const Value.absent(),this.startDate = const Value.absent(),this.endDate = const Value.absent(),this.reviewText = const Value.absent(),this.rating = const Value.absent(),this.createdAt = const Value.absent(),this.updatedAt = const Value.absent(),});
-HobbyObjectsCompanion.insert({this.id = const Value.absent(),required int categoryId,this.status = const Value.absent(),required String name,required String emoji,this.startDate = const Value.absent(),this.endDate = const Value.absent(),this.reviewText = const Value.absent(),this.rating = const Value.absent(),this.createdAt = const Value.absent(),this.updatedAt = const Value.absent(),}): categoryId = Value(categoryId), name = Value(name), emoji = Value(emoji);
+const HobbyObjectsCompanion({this.id = const Value.absent(),this.categoryId = const Value.absent(),this.status = const Value.absent(),this.name = const Value.absent(),this.emoji = const Value.absent(),this.startDate = const Value.absent(),this.endDate = const Value.absent(),this.reviewText = const Value.absent(),this.rating = const Value.absent(),this.activePeriods = const Value.absent(),this.createdAt = const Value.absent(),this.updatedAt = const Value.absent(),});
+HobbyObjectsCompanion.insert({this.id = const Value.absent(),required int categoryId,this.status = const Value.absent(),required String name,required String emoji,this.startDate = const Value.absent(),this.endDate = const Value.absent(),this.reviewText = const Value.absent(),this.rating = const Value.absent(),this.activePeriods = const Value.absent(),this.createdAt = const Value.absent(),this.updatedAt = const Value.absent(),}): categoryId = Value(categoryId), name = Value(name), emoji = Value(emoji);
 static Insertable<HobbyObject> custom({Expression<int>? id, 
 Expression<int>? categoryId, 
 Expression<int>? status, 
@@ -267,12 +274,13 @@ Expression<DateTime>? startDate,
 Expression<DateTime>? endDate, 
 Expression<String>? reviewText, 
 Expression<int>? rating, 
+Expression<String>? activePeriods, 
 Expression<DateTime>? createdAt, 
 Expression<DateTime>? updatedAt, 
 }) {
-return RawValuesInsertable({if (id != null)'id': id,if (categoryId != null)'category_id': categoryId,if (status != null)'status': status,if (name != null)'name': name,if (emoji != null)'emoji': emoji,if (startDate != null)'start_date': startDate,if (endDate != null)'end_date': endDate,if (reviewText != null)'review_text': reviewText,if (rating != null)'rating': rating,if (createdAt != null)'created_at': createdAt,if (updatedAt != null)'updated_at': updatedAt,});
-}HobbyObjectsCompanion copyWith({Value<int>? id, Value<int>? categoryId, Value<HobbyObjectStatus>? status, Value<String>? name, Value<String>? emoji, Value<DateTime?>? startDate, Value<DateTime?>? endDate, Value<String?>? reviewText, Value<int?>? rating, Value<DateTime>? createdAt, Value<DateTime>? updatedAt}) {
-return HobbyObjectsCompanion(id: id ?? this.id,categoryId: categoryId ?? this.categoryId,status: status ?? this.status,name: name ?? this.name,emoji: emoji ?? this.emoji,startDate: startDate ?? this.startDate,endDate: endDate ?? this.endDate,reviewText: reviewText ?? this.reviewText,rating: rating ?? this.rating,createdAt: createdAt ?? this.createdAt,updatedAt: updatedAt ?? this.updatedAt,);
+return RawValuesInsertable({if (id != null)'id': id,if (categoryId != null)'category_id': categoryId,if (status != null)'status': status,if (name != null)'name': name,if (emoji != null)'emoji': emoji,if (startDate != null)'start_date': startDate,if (endDate != null)'end_date': endDate,if (reviewText != null)'review_text': reviewText,if (rating != null)'rating': rating,if (activePeriods != null)'active_periods': activePeriods,if (createdAt != null)'created_at': createdAt,if (updatedAt != null)'updated_at': updatedAt,});
+}HobbyObjectsCompanion copyWith({Value<int>? id, Value<int>? categoryId, Value<HobbyObjectStatus>? status, Value<String>? name, Value<String>? emoji, Value<DateTime?>? startDate, Value<DateTime?>? endDate, Value<String?>? reviewText, Value<int?>? rating, Value<String?>? activePeriods, Value<DateTime>? createdAt, Value<DateTime>? updatedAt}) {
+return HobbyObjectsCompanion(id: id ?? this.id,categoryId: categoryId ?? this.categoryId,status: status ?? this.status,name: name ?? this.name,emoji: emoji ?? this.emoji,startDate: startDate ?? this.startDate,endDate: endDate ?? this.endDate,reviewText: reviewText ?? this.reviewText,rating: rating ?? this.rating,activePeriods: activePeriods ?? this.activePeriods,createdAt: createdAt ?? this.createdAt,updatedAt: updatedAt ?? this.updatedAt,);
 }
 @override
 Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -294,6 +302,8 @@ if (reviewText.present) {
 map['review_text'] = Variable<String>(reviewText.value);}
 if (rating.present) {
 map['rating'] = Variable<int>(rating.value);}
+if (activePeriods.present) {
+map['active_periods'] = Variable<String>(activePeriods.value);}
 if (createdAt.present) {
 map['created_at'] = Variable<DateTime>(createdAt.value);}
 if (updatedAt.present) {
@@ -301,7 +311,7 @@ map['updated_at'] = Variable<DateTime>(updatedAt.value);}
 return map; 
 }
 @override
-String toString() {return (StringBuffer('HobbyObjectsCompanion(')..write('id: $id, ')..write('categoryId: $categoryId, ')..write('status: $status, ')..write('name: $name, ')..write('emoji: $emoji, ')..write('startDate: $startDate, ')..write('endDate: $endDate, ')..write('reviewText: $reviewText, ')..write('rating: $rating, ')..write('createdAt: $createdAt, ')..write('updatedAt: $updatedAt')..write(')')).toString();}
+String toString() {return (StringBuffer('HobbyObjectsCompanion(')..write('id: $id, ')..write('categoryId: $categoryId, ')..write('status: $status, ')..write('name: $name, ')..write('emoji: $emoji, ')..write('startDate: $startDate, ')..write('endDate: $endDate, ')..write('reviewText: $reviewText, ')..write('rating: $rating, ')..write('activePeriods: $activePeriods, ')..write('createdAt: $createdAt, ')..write('updatedAt: $updatedAt')..write(')')).toString();}
 }
 class $NotesTable extends Notes with TableInfo<$NotesTable, Note>{
 @override final GeneratedDatabase attachedDatabase;
@@ -579,8 +589,8 @@ GeneratedColumn<DateTime> get updatedAt => $composableBuilder(
     (Category,BaseReferences<_$AppDatabase,$CategoriesTable,Category>),
     Category,
     PrefetchHooks Function()
-    >;typedef $$HobbyObjectsTableCreateCompanionBuilder = HobbyObjectsCompanion Function({Value<int> id,required int categoryId,Value<HobbyObjectStatus> status,required String name,required String emoji,Value<DateTime?> startDate,Value<DateTime?> endDate,Value<String?> reviewText,Value<int?> rating,Value<DateTime> createdAt,Value<DateTime> updatedAt,});
-typedef $$HobbyObjectsTableUpdateCompanionBuilder = HobbyObjectsCompanion Function({Value<int> id,Value<int> categoryId,Value<HobbyObjectStatus> status,Value<String> name,Value<String> emoji,Value<DateTime?> startDate,Value<DateTime?> endDate,Value<String?> reviewText,Value<int?> rating,Value<DateTime> createdAt,Value<DateTime> updatedAt,});
+    >;typedef $$HobbyObjectsTableCreateCompanionBuilder = HobbyObjectsCompanion Function({Value<int> id,required int categoryId,Value<HobbyObjectStatus> status,required String name,required String emoji,Value<DateTime?> startDate,Value<DateTime?> endDate,Value<String?> reviewText,Value<int?> rating,Value<String?> activePeriods,Value<DateTime> createdAt,Value<DateTime> updatedAt,});
+typedef $$HobbyObjectsTableUpdateCompanionBuilder = HobbyObjectsCompanion Function({Value<int> id,Value<int> categoryId,Value<HobbyObjectStatus> status,Value<String> name,Value<String> emoji,Value<DateTime?> startDate,Value<DateTime?> endDate,Value<String?> reviewText,Value<int?> rating,Value<String?> activePeriods,Value<DateTime> createdAt,Value<DateTime> updatedAt,});
 class $$HobbyObjectsTableFilterComposer extends Composer<
         _$AppDatabase,
         $HobbyObjectsTable> {
@@ -633,6 +643,11 @@ ColumnFilters<String> get reviewText => $composableBuilder(
       
 ColumnFilters<int> get rating => $composableBuilder(
       column: $table.rating,
+      builder: (column) => 
+      ColumnFilters(column));
+      
+ColumnFilters<String> get activePeriods => $composableBuilder(
+      column: $table.activePeriods,
       builder: (column) => 
       ColumnFilters(column));
       
@@ -702,6 +717,11 @@ ColumnOrderings<int> get rating => $composableBuilder(
       builder: (column) => 
       ColumnOrderings(column));
       
+ColumnOrderings<String> get activePeriods => $composableBuilder(
+      column: $table.activePeriods,
+      builder: (column) => 
+      ColumnOrderings(column));
+      
 ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt,
       builder: (column) => 
@@ -759,6 +779,10 @@ GeneratedColumn<int> get rating => $composableBuilder(
       column: $table.rating,
       builder: (column) => column);
       
+GeneratedColumn<String> get activePeriods => $composableBuilder(
+      column: $table.activePeriods,
+      builder: (column) => column);
+      
 GeneratedColumn<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt,
       builder: (column) => column);
@@ -787,8 +811,8 @@ GeneratedColumn<DateTime> get updatedAt => $composableBuilder(
         createFilteringComposer: () => $$HobbyObjectsTableFilterComposer($db: db,$table:table),
         createOrderingComposer: () => $$HobbyObjectsTableOrderingComposer($db: db,$table:table),
         createComputedFieldComposer: () => $$HobbyObjectsTableAnnotationComposer($db: db,$table:table),
-        updateCompanionCallback: ({Value<int> id = const Value.absent(),Value<int> categoryId = const Value.absent(),Value<HobbyObjectStatus> status = const Value.absent(),Value<String> name = const Value.absent(),Value<String> emoji = const Value.absent(),Value<DateTime?> startDate = const Value.absent(),Value<DateTime?> endDate = const Value.absent(),Value<String?> reviewText = const Value.absent(),Value<int?> rating = const Value.absent(),Value<DateTime> createdAt = const Value.absent(),Value<DateTime> updatedAt = const Value.absent(),})=> HobbyObjectsCompanion(id: id,categoryId: categoryId,status: status,name: name,emoji: emoji,startDate: startDate,endDate: endDate,reviewText: reviewText,rating: rating,createdAt: createdAt,updatedAt: updatedAt,),
-        createCompanionCallback: ({Value<int> id = const Value.absent(),required int categoryId,Value<HobbyObjectStatus> status = const Value.absent(),required String name,required String emoji,Value<DateTime?> startDate = const Value.absent(),Value<DateTime?> endDate = const Value.absent(),Value<String?> reviewText = const Value.absent(),Value<int?> rating = const Value.absent(),Value<DateTime> createdAt = const Value.absent(),Value<DateTime> updatedAt = const Value.absent(),})=> HobbyObjectsCompanion.insert(id: id,categoryId: categoryId,status: status,name: name,emoji: emoji,startDate: startDate,endDate: endDate,reviewText: reviewText,rating: rating,createdAt: createdAt,updatedAt: updatedAt,),
+        updateCompanionCallback: ({Value<int> id = const Value.absent(),Value<int> categoryId = const Value.absent(),Value<HobbyObjectStatus> status = const Value.absent(),Value<String> name = const Value.absent(),Value<String> emoji = const Value.absent(),Value<DateTime?> startDate = const Value.absent(),Value<DateTime?> endDate = const Value.absent(),Value<String?> reviewText = const Value.absent(),Value<int?> rating = const Value.absent(),Value<String?> activePeriods = const Value.absent(),Value<DateTime> createdAt = const Value.absent(),Value<DateTime> updatedAt = const Value.absent(),})=> HobbyObjectsCompanion(id: id,categoryId: categoryId,status: status,name: name,emoji: emoji,startDate: startDate,endDate: endDate,reviewText: reviewText,rating: rating,activePeriods: activePeriods,createdAt: createdAt,updatedAt: updatedAt,),
+        createCompanionCallback: ({Value<int> id = const Value.absent(),required int categoryId,Value<HobbyObjectStatus> status = const Value.absent(),required String name,required String emoji,Value<DateTime?> startDate = const Value.absent(),Value<DateTime?> endDate = const Value.absent(),Value<String?> reviewText = const Value.absent(),Value<int?> rating = const Value.absent(),Value<String?> activePeriods = const Value.absent(),Value<DateTime> createdAt = const Value.absent(),Value<DateTime> updatedAt = const Value.absent(),})=> HobbyObjectsCompanion.insert(id: id,categoryId: categoryId,status: status,name: name,emoji: emoji,startDate: startDate,endDate: endDate,reviewText: reviewText,rating: rating,activePeriods: activePeriods,createdAt: createdAt,updatedAt: updatedAt,),
         withReferenceMapper: (p0) => p0
               .map(
                   (e) =>
