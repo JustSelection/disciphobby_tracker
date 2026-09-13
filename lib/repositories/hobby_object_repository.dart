@@ -1,3 +1,4 @@
+// lib/repositories/hobby_object_repository.dart
 import 'package:drift/drift.dart';
 import '../database/app_database.dart';
 
@@ -9,10 +10,22 @@ class HobbyObjectRepository {
 
   /// Получает объекты конкретной категории с указанным статусом
   Future<List<HobbyObject>> getObjectsByStatus(int categoryId, HobbyObjectStatus status) {
-    return (db.select(db.hobbyObjects)
-          ..where((t) => t.categoryId.equals(categoryId) & t.status.equalsValue(status))
-          ..orderBy([(t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc)]))
-        .get();
+    final query = db.select(db.hobbyObjects)
+        ..where((t) => t.categoryId.equals(categoryId) & t.status.equalsValue(status));
+
+    // ✅ ИСПРАВЛЕНО: Завершенные объекты сортируем по дате завершения (новые сверху)
+    // Остальные статусы (queued, active, deferred) сортируем по дате создания
+    if (status == HobbyObjectStatus.completed) {
+      query.orderBy([
+        (t) => OrderingTerm(expression: t.endDate, mode: OrderingMode.desc),
+      ]);
+    } else {
+      query.orderBy([
+        (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
+      ]);
+    }
+
+    return query.get();
   }
 
   /// Получает один объект по его ID
