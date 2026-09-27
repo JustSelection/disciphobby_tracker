@@ -1,5 +1,5 @@
 // lib/widgets/queue_list_widget.dart
-import 'package:drift/drift.dart' hide Column; // Скрываем Column из drift во избежание конфликта с Flutter Column
+import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../database/app_database.dart';
@@ -24,7 +24,6 @@ class QueueListWidget extends StatelessWidget {
   });
 
   /// Перемещает объект вверх в очереди.
-  /// Реализация: меняет createdAt местами с предыдущим объектом.
   Future<void> _moveUp(int index) async {
     if (index <= 0) return;
     final repo = HobbyObjectRepository(db);
@@ -140,6 +139,8 @@ class QueueListWidget extends StatelessWidget {
               onMoveUp: () => _moveUp(index),
               onMoveDown: () => _moveDown(index),
               onDelete: () => _deleteObject(obj.id),
+              // ✅ ДОБАВЛЕНО: Передаем колбэк для обновления списка после редактирования
+              onDataChanged: onObjectChanged,
             );
           }),
 

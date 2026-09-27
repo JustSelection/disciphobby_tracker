@@ -2,9 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../database/app_database.dart';
+import 'edit_queue_object_dialog.dart';
 
-/// Карточка объекта в очереди (Сцена 3).
-/// При long-press показывает меню действий: переместить вверх/вниз, удалить.
 class QueueCardWidget extends StatelessWidget {
   final HobbyObject object;
   final int index;
@@ -12,6 +11,7 @@ class QueueCardWidget extends StatelessWidget {
   final VoidCallback onMoveUp;
   final VoidCallback onMoveDown;
   final VoidCallback onDelete;
+  final VoidCallback onDataChanged;
 
   const QueueCardWidget({
     super.key,
@@ -21,67 +21,74 @@ class QueueCardWidget extends StatelessWidget {
     required this.onMoveUp,
     required this.onMoveDown,
     required this.onDelete,
+    required this.onDataChanged,
   });
+
+  void _showInfoPopup(BuildContext context) {
+    HapticFeedback.selectionClick();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(object.emoji, style: const TextStyle(fontSize: 64)),
+            const SizedBox(height: 16),
+            Text(
+              object.name,
+              style: Theme.of(ctx).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 8),
+            Text('В очереди на выполнение',
+                style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(color: Theme.of(ctx).colorScheme.outline)),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Понятно')),
+        ],
+      ),
+    );
+  }
 
   void _showContextMenu(BuildContext context) {
     HapticFeedback.selectionClick();
-    
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(height: 8),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Theme.of(ctx).colorScheme.outlineVariant,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: Theme.of(ctx).colorScheme.outlineVariant, borderRadius: BorderRadius.circular(2))),
             const SizedBox(height: 16),
+            // ✅ Вызов вынесенного диалога
             ListTile(
-              leading: Icon(
-                Icons.arrow_upward,
-                color: index > 0 ? null : Theme.of(ctx).colorScheme.outline,
-              ),
-              title: Text(
-                'Переместить вверх',
-                style: TextStyle(
-                  color: index > 0 ? null : Theme.of(ctx).colorScheme.outline,
-                ),
-              ),
+              leading: const Icon(Icons.edit, color: Colors.blue),
+              title: const Text('Редактировать', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.w600)),
+              onTap: () {
+                Navigator.pop(ctx);
+                showEditQueueObjectDialog(context, object, onDataChanged);
+              },
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: Icon(Icons.arrow_upward, color: index > 0 ? null : Theme.of(ctx).colorScheme.outline),
+              title: Text('Переместить вверх', style: TextStyle(color: index > 0 ? null : Theme.of(ctx).colorScheme.outline)),
               enabled: index > 0,
-              onTap: () {
-                Navigator.pop(ctx);
-                HapticFeedback.mediumImpact();
-                onMoveUp();
-              },
+              onTap: () { Navigator.pop(ctx); HapticFeedback.mediumImpact(); onMoveUp(); },
             ),
             ListTile(
-              leading: Icon(
-                Icons.arrow_downward,
-                color: index < totalItems - 1 ? null : Theme.of(ctx).colorScheme.outline,
-              ),
-              title: Text(
-                'Переместить вниз',
-                style: TextStyle(
-                  color: index < totalItems - 1 ? null : Theme.of(ctx).colorScheme.outline,
-                ),
-              ),
+              leading: Icon(Icons.arrow_downward, color: index < totalItems - 1 ? null : Theme.of(ctx).colorScheme.outline),
+              title: Text('Переместить вниз', style: TextStyle(color: index < totalItems - 1 ? null : Theme.of(ctx).colorScheme.outline)),
               enabled: index < totalItems - 1,
-              onTap: () {
-                Navigator.pop(ctx);
-                HapticFeedback.mediumImpact();
-                onMoveDown();
-              },
+              onTap: () { Navigator.pop(ctx); HapticFeedback.mediumImpact(); onMoveDown(); },
             ),
-            const Divider(),
+            const Divider(height: 1),
             ListTile(
               leading: const Icon(Icons.delete, color: Colors.red),
               title: const Text('Удалить', style: TextStyle(color: Colors.red)),
@@ -104,17 +111,10 @@ class QueueCardWidget extends StatelessWidget {
         title: const Text('Удалить объект?'),
         content: Text('Объект «${object.name}» будет удален из очереди.'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Отмена'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена')),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () {
-              Navigator.pop(ctx);
-              HapticFeedback.mediumImpact();
-              onDelete();
-            },
+            onPressed: () { Navigator.pop(ctx); HapticFeedback.mediumImpact(); onDelete(); },
             child: const Text('Удалить'),
           ),
         ],
@@ -125,8 +125,8 @@ class QueueCardWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
     return GestureDetector(
+      onTap: () => _showInfoPopup(context),
       onLongPress: () => _showContextMenu(context),
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
@@ -134,10 +134,7 @@ class QueueCardWidget extends StatelessWidget {
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerLow,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: theme.colorScheme.outlineVariant,
-            width: 1,
-          ),
+          border: Border.all(color: theme.colorScheme.outlineVariant, width: 1),
         ),
         child: Row(
           children: [
@@ -146,18 +143,12 @@ class QueueCardWidget extends StatelessWidget {
             Expanded(
               child: Text(
                 object.name,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.w500,
-                ),
+                style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w500),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            Icon(
-              Icons.drag_handle,
-              color: theme.colorScheme.outline,
-              size: 20,
-            ),
+            Icon(Icons.drag_handle, color: theme.colorScheme.outline, size: 20),
           ],
         ),
       ),
