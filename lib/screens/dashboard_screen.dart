@@ -66,7 +66,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       children: [
         Scaffold(
           appBar: AppBar(
-            title: const Text('DiscipHobby Tracker'),
+            // ✅ ИЗМЕНЕНО: Новое название приложения
+            title: const Text('Focus Hobby Tracker'),
             actions: [
               IconButton(
                 icon: const Icon(Icons.settings),

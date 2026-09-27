@@ -39,7 +39,7 @@ class DiscipHobbyApp extends StatelessWidget {
       valueListenable: themeNotifier,
       builder: (context, currentThemeMode, child) {
         return MaterialApp(
-          title: 'DiscipHobby Tracker',
+          title: 'Focus Hobby Tracker',
           debugShowCheckedModeBanner: false,
           theme: _buildLightTheme(),
           darkTheme: _buildDarkTheme(),

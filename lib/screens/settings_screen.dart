@@ -144,7 +144,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           // === ИНФО О ВЕРСИИ ===
           Center(
             child: Text(
-              'DiscipHobby Tracker v1.0.0',
+              // ✅ ИЗМЕНЕНО: Новое название приложения в футере
+              'Focus Hobby Tracker v1.0.0',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.outline,
               ),

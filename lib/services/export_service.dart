@@ -67,7 +67,7 @@ class ExportService {
     }
 
     buffer.writeln('=' * 40);
-    buffer.writeln('Создано в DiscipHobby Tracker');
+    buffer.writeln('Создано в Focus Hobby Tracker');
 
     // 3. Сохранение во временный файл
     final directory = await getTemporaryDirectory();
