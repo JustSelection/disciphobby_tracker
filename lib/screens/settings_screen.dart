@@ -1,9 +1,12 @@
 // lib/screens/settings_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../services/quote_service.dart';
+import '../widgets/settings_theme_selector.dart';
+import '../widgets/settings_backup_section.dart';
+import '../widgets/settings_biometric_section.dart';
 
 /// Экран настроек приложения (Сцена 7).
-/// Содержит переключатель темы, управление бэкапом и биометрическую блокировку.
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -16,17 +19,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _biometricEnabled = false;
   bool _isBackupInProgress = false;
   bool _isRestoreInProgress = false;
+  bool _showQuoteOnStart = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadQuotePreference();
+  }
+
+  Future<void> _loadQuotePreference() async {
+    final value = await QuoteService.loadShowQuote();
+    if (mounted) setState(() => _showQuoteOnStart = value);
+  }
 
   void _onThemeChanged(ThemeMode mode) {
     HapticFeedback.selectionClick();
     setState(() => _currentTheme = mode);
-    // TODO: Шаг 25 — Сохранить выбор через ThemeService и применить в рантайме
+    // TODO: Шаг 25 — Сохранить выбор через ThemeService
   }
 
   Future<void> _createBackup() async {
     HapticFeedback.mediumImpact();
     setState(() => _isBackupInProgress = true);
-    // TODO: Шаг 27 — Реализовать BackupService.createBackup()
     await Future.delayed(const Duration(milliseconds: 500));
     if (mounted) {
       setState(() => _isBackupInProgress = false);
@@ -39,7 +53,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _restoreBackup() async {
     HapticFeedback.mediumImpact();
     setState(() => _isRestoreInProgress = true);
-    // TODO: Шаг 27 — Реализовать BackupService.restoreBackup()
     await Future.delayed(const Duration(milliseconds: 500));
     if (mounted) {
       setState(() => _isRestoreInProgress = false);
@@ -55,6 +68,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // TODO: Шаг 28 — Проверить доступность биометрии через local_auth
   }
 
+  Future<void> _onQuoteToggle(bool value) async {
+    HapticFeedback.selectionClick();
+    setState(() => _showQuoteOnStart = value);
+    await QuoteService.saveShowQuote(value);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -63,60 +82,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // === БЛОК 1: ТЕМА ===
+          // === БЛОК 1: ВНЕШНИЙ ВИД ===
           const _SectionHeader(title: 'Внешний вид', icon: Icons.palette_outlined),
           const SizedBox(height: 8),
-          _ThemeSelector(
+          SettingsThemeSelector(
             currentTheme: _currentTheme,
             onChanged: _onThemeChanged,
           ),
           const SizedBox(height: 24),
 
-          // === БЛОК 2: РЕЗЕРВНОЕ КОПИРОВАНИЕ ===
-          const _SectionHeader(title: 'Данные', icon: Icons.cloud_sync_outlined),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              children: [
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.upload_file, color: theme.colorScheme.primary),
-                  title: const Text('Создать резервную копию'),
-                  subtitle: Text(
-                    'Сохранить все данные в зашифрованный файл',
-                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
-                  ),
-                  trailing: _isBackupInProgress
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.chevron_right),
-                  onTap: _isBackupInProgress ? null : _createBackup,
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.file_download, color: theme.colorScheme.tertiary), // ИСПРАВЛЕНО
-                  title: const Text('Восстановить из копии'),
-                  subtitle: Text(
-                    'Загрузить данные из ранее сохранённого файла',
-                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
-                  ),
-                  trailing: _isRestoreInProgress
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.chevron_right),
-                  onTap: _isRestoreInProgress ? null : _restoreBackup,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // === БЛОК 3: БЕЗОПАСНОСТЬ ===
-          const _SectionHeader(title: 'Безопасность', icon: Icons.lock_outline),
+          // === БЛОК 2: ЗАПУСК ===
+          const _SectionHeader(title: 'Запуск', icon: Icons.auto_awesome_outlined),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.all(16),
@@ -127,17 +103,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: SwitchListTile(
               contentPadding: EdgeInsets.zero,
               secondary: Icon(
-                Icons.fingerprint,
-                color: _biometricEnabled ? theme.colorScheme.primary : theme.colorScheme.outline,
+                Icons.format_quote,
+                color: _showQuoteOnStart
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.outline,
               ),
-              title: const Text('Биометрическая блокировка'),
+              title: const Text('Вдохновляющая цитата при запуске'),
               subtitle: Text(
-                'Требовать FaceID/TouchID при запуске',
-                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
+                'Показывать случайную цитату на 5 секунд',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.outline,
+                ),
               ),
-              value: _biometricEnabled,
-              onChanged: _onBiometricChanged,
+              value: _showQuoteOnStart,
+              onChanged: _onQuoteToggle,
             ),
+          ),
+          const SizedBox(height: 24),
+
+          // === БЛОК 3: ДАННЫЕ ===
+          const _SectionHeader(title: 'Данные', icon: Icons.cloud_sync_outlined),
+          const SizedBox(height: 8),
+          SettingsBackupSection(
+            isBackupInProgress: _isBackupInProgress,
+            isRestoreInProgress: _isRestoreInProgress,
+            onCreateBackup: _createBackup,
+            onRestoreBackup: _restoreBackup,
+          ),
+          const SizedBox(height: 24),
+
+          // === БЛОК 4: БЕЗОПАСНОСТЬ ===
+          const _SectionHeader(title: 'Безопасность', icon: Icons.lock_outline),
+          const SizedBox(height: 8),
+          SettingsBiometricSection(
+            biometricEnabled: _biometricEnabled,
+            onBiometricChanged: _onBiometricChanged,
           ),
           const SizedBox(height: 32),
 
@@ -145,7 +145,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Center(
             child: Text(
               'DiscipHobby Tracker v1.0.0',
-              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.outline,
+              ),
             ),
           ),
         ],
@@ -169,101 +171,11 @@ class _SectionHeader extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           title,
-          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ],
-    );
-  }
-}
-
-/// Сегментированный переключатель темы (Светлая/Тёмная/Системная).
-class _ThemeSelector extends StatelessWidget {
-  final ThemeMode currentTheme;
-  final ValueChanged<ThemeMode> onChanged;
-
-  const _ThemeSelector({required this.currentTheme, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          _ThemeButton(
-            icon: Icons.light_mode,
-            label: 'Светлая',
-            isSelected: currentTheme == ThemeMode.light,
-            onTap: () => onChanged(ThemeMode.light),
-          ),
-          _ThemeButton(
-            icon: Icons.dark_mode,
-            label: 'Тёмная',
-            isSelected: currentTheme == ThemeMode.dark,
-            onTap: () => onChanged(ThemeMode.dark),
-          ),
-          _ThemeButton(
-            icon: Icons.settings_brightness,
-            label: 'Системная',
-            isSelected: currentTheme == ThemeMode.system,
-            onTap: () => onChanged(ThemeMode.system),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Одна кнопка в сегментированном контроле темы.
-class _ThemeButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _ThemeButton({
-    required this.icon,
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected ? theme.colorScheme.primaryContainer : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Column(
-            children: [
-              Icon(
-                icon,
-                size: 22,
-                color: isSelected ? theme.colorScheme.primary : theme.colorScheme.outline,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: isSelected ? theme.colorScheme.primary : theme.colorScheme.outline,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

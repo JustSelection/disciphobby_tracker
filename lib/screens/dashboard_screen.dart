@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import '../main.dart';
 import '../database/app_database.dart';
 import '../repositories/category_repository.dart';
+import '../services/quote_service.dart';
 import '../widgets/zero_state_widget.dart';
 import '../widgets/category_grid_widget.dart';
 import '../widgets/create_category_dialog.dart';
+import '../widgets/quote_splash_overlay.dart';
 import 'settings_screen.dart';
 
 /// Основной экран дашборда с категориями
@@ -20,12 +22,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
   late final CategoryRepository _categoryRepo;
   List<Category> _categories = [];
   bool _isLoading = true;
+  bool _showQuoteSplash = true; // По умолчанию показываем, потом уточняем из настроек
 
   @override
   void initState() {
     super.initState();
     _categoryRepo = CategoryRepository(db);
+    _checkQuotePreference();
     _loadCategories();
+  }
+
+  Future<void> _checkQuotePreference() async {
+    final showQuote = await QuoteService.loadShowQuote();
+    if (mounted) {
+      setState(() => _showQuoteSplash = showQuote);
+    }
   }
 
   Future<void> _loadCategories() async {
@@ -51,31 +62,47 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('DiscipHobby Tracker'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            tooltip: 'Настройки',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SettingsScreen()),
-              );
+    return Stack(
+      children: [
+        Scaffold(
+          appBar: AppBar(
+            title: const Text('DiscipHobby Tracker'),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.settings),
+                tooltip: 'Настройки',
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SettingsScreen(),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+          body: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _categories.isEmpty
+                  ? ZeroStateWidget(onCreateCategory: _showCreateCategoryDialog)
+                  : CategoryGridWidget(
+                      categories: _categories,
+                      onRefresh: _loadCategories,
+                    ),
+          floatingActionButton: FloatingActionButton(
+            onPressed: _showCreateCategoryDialog,
+            child: const Icon(Icons.add),
+          ),
+        ),
+        // Оверлей с цитатой поверх всего интерфейса
+        if (_showQuoteSplash)
+          QuoteSplashOverlay(
+            onDismissed: () {
+              setState(() => _showQuoteSplash = false);
             },
           ),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _categories.isEmpty
-              ? ZeroStateWidget(onCreateCategory: _showCreateCategoryDialog)
-              : CategoryGridWidget(categories: _categories, onRefresh: _loadCategories),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showCreateCategoryDialog,
-        child: const Icon(Icons.add),
-      ),
+      ],
     );
   }
 }
