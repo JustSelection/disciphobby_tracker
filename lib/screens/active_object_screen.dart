@@ -56,8 +56,7 @@ class _ActiveObjectScreenState extends State<ActiveObjectScreen> {
   }
 
   Future<void> _onRefresh() async {
-    debugPrint('👆 [DEBUG] Обновление запущено (свайп или кнопка)!');
-    // Небольшая задержка для плавности UI
+    debugPrint('👆 [DEBUG] Обновление запущено (свайп)!');
     await Future.delayed(const Duration(milliseconds: 300));
     await _loadAllData();
     debugPrint('🏁 [DEBUG] Обновление завершено.');
@@ -68,14 +67,7 @@ class _ActiveObjectScreenState extends State<ActiveObjectScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Активный объект', overflow: TextOverflow.ellipsis),
-        // ✅ ДОБАВЛЕНО: Кнопка для проверки логики обновления
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Обновить данные',
-            onPressed: _onRefresh,
-          ),
-        ],
+        // ✅ УБРАНО: Кнопка обновления, так как используется свайп вниз
       ),
       body: ActiveObjectScreenBody(
         isLoading: _isLoading,

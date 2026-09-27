@@ -85,28 +85,39 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
       appBar: AppBar(
         title: Text('Архив: ${widget.categoryName}'),
         actions: [
-          // ✅ ИСПРАВЛЕНО: Добавлена явная иконка фильтра вместо стандартных "трех точек"
-          PopupMenuButton<ArchiveSortMode>(
-            icon: const Icon(Icons.filter_list), // Иконка воронки/фильтра
-            tooltip: 'Сортировка',
-            initialValue: _sortMode,
-            onSelected: (mode) {
-              HapticFeedback.selectionClick();
-              setState(() => _sortMode = mode);
-              _applySorting();
-            },
-            itemBuilder: (context) => ArchiveSortMode.values.map((mode) {
-              return PopupMenuItem(
-                value: mode,
-                child: Row(
-                  children: [
-                    if (mode == _sortMode) Icon(Icons.check, color: theme.colorScheme.primary, size: 20),
-                    if (mode == _sortMode) const SizedBox(width: 8),
-                    Text(_getSortLabel(mode)),
-                  ],
+          // ✅ ИСПРАВЛЕНО: Обертка Theme для стилизации выпадающего меню
+          Theme(
+            data: theme.copyWith(
+              popupMenuTheme: PopupMenuThemeData(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
                 ),
-              );
-            }).toList(),
+                color: theme.colorScheme.surfaceContainerHigh,
+                elevation: 8,
+              ),
+            ),
+            child: PopupMenuButton<ArchiveSortMode>(
+              icon: const Icon(Icons.filter_list),
+              tooltip: 'Сортировка',
+              initialValue: _sortMode,
+              onSelected: (mode) {
+                HapticFeedback.selectionClick();
+                setState(() => _sortMode = mode);
+                _applySorting();
+              },
+              itemBuilder: (context) => ArchiveSortMode.values.map((mode) {
+                return PopupMenuItem(
+                  value: mode,
+                  child: Row(
+                    children: [
+                      if (mode == _sortMode) Icon(Icons.check, color: theme.colorScheme.primary, size: 20),
+                      if (mode == _sortMode) const SizedBox(width: 8),
+                      Text(_getSortLabel(mode)),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
           ),
         ],
       ),
@@ -131,8 +142,6 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
                       ),
                     )
                   : ListView.builder(
-                      // ✅ Ключ заставляет Flutter пересоздать список при смене сортировки,
-                      // что красиво перезапускает каскадную анимацию появления карточек.
                       key: ValueKey(_sortMode),
                       padding: const EdgeInsets.all(16),
                       itemCount: _completedObjects.length,

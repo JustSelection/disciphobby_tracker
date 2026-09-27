@@ -16,9 +16,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   ThemeMode _currentTheme = ThemeMode.system;
-  bool _biometricEnabled = false;
-  bool _isBackupInProgress = false;
-  bool _isRestoreInProgress = false;
+  final bool _biometricEnabled = false; // ✅ ДОБАВЛЕНО: final, так как состояние больше не меняется
   bool _showQuoteOnStart = true;
 
   @override
@@ -38,34 +36,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // TODO: Шаг 25 — Сохранить выбор через ThemeService
   }
 
-  Future<void> _createBackup() async {
-    HapticFeedback.mediumImpact();
-    setState(() => _isBackupInProgress = true);
-    await Future.delayed(const Duration(milliseconds: 500));
-    if (mounted) {
-      setState(() => _isBackupInProgress = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Бэкап будет реализован на Шаге 27')),
-      );
-    }
+  // ✅ ЕДИНАЯ ЗАГЛУШКА ДЛЯ НЕРЕАЛИЗОВАННЫХ ФУНКЦИЙ
+  Future<void> _showComingSoon() async {
+    HapticFeedback.lightImpact(); // Нежная короткая вибрация
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Эта функция скоро будет добавлена'),
+        duration: Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
-  Future<void> _restoreBackup() async {
-    HapticFeedback.mediumImpact();
-    setState(() => _isRestoreInProgress = true);
-    await Future.delayed(const Duration(milliseconds: 500));
-    if (mounted) {
-      setState(() => _isRestoreInProgress = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Восстановление будет реализовано на Шаге 27')),
-      );
-    }
-  }
+  Future<void> _createBackup() async => _showComingSoon();
+
+  Future<void> _restoreBackup() async => _showComingSoon();
 
   void _onBiometricChanged(bool value) {
-    HapticFeedback.selectionClick();
-    setState(() => _biometricEnabled = value);
-    // TODO: Шаг 28 — Проверить доступность биометрии через local_auth
+    _showComingSoon();
   }
 
   Future<void> _onQuoteToggle(bool value) async {
@@ -82,7 +71,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // === БЛОК 1: ВНЕШНИЙ ВИД ===
           const _SectionHeader(title: 'Внешний вид', icon: Icons.palette_outlined),
           const SizedBox(height: 8),
           SettingsThemeSelector(
@@ -91,7 +79,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 24),
 
-          // === БЛОК 2: ЗАПУСК ===
           const _SectionHeader(title: 'Запуск', icon: Icons.auto_awesome_outlined),
           const SizedBox(height: 8),
           Container(
@@ -104,16 +91,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
               contentPadding: EdgeInsets.zero,
               secondary: Icon(
                 Icons.format_quote,
-                color: _showQuoteOnStart
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.outline,
+                color: _showQuoteOnStart ? theme.colorScheme.primary : theme.colorScheme.outline,
               ),
-              title: const Text('Вдохновляющая цитата при запуске'),
+              title: const Text('Вдохновляющая цитата'),
               subtitle: Text(
-                'Показывать случайную цитату на 5 секунд',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.outline,
-                ),
+                'Показывать вдохновляющую цитату при запуске приложения',
+                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
               ),
               value: _showQuoteOnStart,
               onChanged: _onQuoteToggle,
@@ -121,18 +104,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 24),
 
-          // === БЛОК 3: ДАННЫЕ ===
           const _SectionHeader(title: 'Данные', icon: Icons.cloud_sync_outlined),
           const SizedBox(height: 8),
           SettingsBackupSection(
-            isBackupInProgress: _isBackupInProgress,
-            isRestoreInProgress: _isRestoreInProgress,
+            isBackupInProgress: false,
+            isRestoreInProgress: false,
             onCreateBackup: _createBackup,
             onRestoreBackup: _restoreBackup,
           ),
           const SizedBox(height: 24),
 
-          // === БЛОК 4: БЕЗОПАСНОСТЬ ===
           const _SectionHeader(title: 'Безопасность', icon: Icons.lock_outline),
           const SizedBox(height: 8),
           SettingsBiometricSection(
@@ -141,14 +122,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 32),
 
-          // === ИНФО О ВЕРСИИ ===
           Center(
             child: Text(
-              // ✅ ИЗМЕНЕНО: Новое название приложения в футере
               'Focus Hobby Tracker v1.0.0',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.outline,
-              ),
+              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
             ),
           ),
         ],
@@ -157,7 +134,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 }
 
-/// Заголовок секции настроек с иконкой.
 class _SectionHeader extends StatelessWidget {
   final String title;
   final IconData icon;
@@ -172,9 +148,7 @@ class _SectionHeader extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           title,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
       ],
     );
