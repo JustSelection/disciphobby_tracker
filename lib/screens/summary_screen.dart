@@ -145,10 +145,12 @@ class _SummaryScreenState extends State<SummaryScreen> {
   @override
   Widget build(BuildContext context) {
     final obj = widget.object;
+    final theme = Theme.of(context);
 
     return Scaffold(
+      // ✅ ИЗМЕНЕНО: Статичный заголовок AppBar (больше не обрезается)
       appBar: AppBar(
-        title: Text(obj.name, overflow: TextOverflow.ellipsis),
+        title: const Text('Завершенный объект'),
         actions: [
           IconButton(
             icon: const Icon(Icons.star_border),
@@ -164,6 +166,15 @@ class _SummaryScreenState extends State<SummaryScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // ✅ ДОБАВЛЕНО: Полное название объекта здесь, без ограничений по строкам
+                  Text(
+                    obj.name,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
                   SummaryHeaderWidget(
                     object: obj,
                     currentRating: _currentRating,
@@ -178,7 +189,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                   const SizedBox(height: 24),
                   Text(
                     'Хронология заметок',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
