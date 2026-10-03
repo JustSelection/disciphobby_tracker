@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../main.dart';
 import '../services/theme_service.dart';
 import '../services/quote_service.dart';
+import '../services/biometric_service.dart';
 import '../widgets/settings_theme_selector.dart';
 import '../widgets/settings_backup_section.dart';
 import '../widgets/settings_biometric_section.dart';
@@ -18,18 +19,24 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   ThemeMode _currentTheme = ThemeMode.system;
-  final bool _biometricEnabled = false;
+  bool _biometricEnabled = false;
   bool _showQuoteOnStart = true;
 
   @override
   void initState() {
     super.initState();
-    _loadQuotePreference();
+    _loadPreferences();
   }
 
-  Future<void> _loadQuotePreference() async {
-    final value = await QuoteService.loadShowQuote();
-    if (mounted) setState(() => _showQuoteOnStart = value);
+  Future<void> _loadPreferences() async {
+    final quoteValue = await QuoteService.loadShowQuote();
+    final biometricValue = await BiometricService.isEnabled();
+    if (mounted) {
+      setState(() {
+        _showQuoteOnStart = quoteValue;
+        _biometricEnabled = biometricValue;
+      });
+    }
   }
 
   void _onThemeChanged(ThemeMode mode) {
@@ -54,8 +61,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _createBackup() async => _showComingSoon();
   Future<void> _restoreBackup() async => _showComingSoon();
 
-  void _onBiometricChanged(bool value) {
-    _showComingSoon();
+  Future<void> _onBiometricChanged(bool value) async {
+    HapticFeedback.selectionClick();
+    
+    // toggleBiometric() сам проверяет доступность и запрашивает подтверждение при включении
+    final result = await BiometricService.toggleBiometric();
+    
+    if (!mounted) return;
+
+    if (result != null) {
+      setState(() => _biometricEnabled = result);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result ? 'Биометрическая защита включена' : 'Биометрическая защита отключена'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Настройка биометрии отменена или недоступна на устройстве'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   Future<void> _onQuoteToggle(bool value) async {

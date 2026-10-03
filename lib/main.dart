@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'database/app_database.dart';
 import 'screens/dashboard_screen.dart';
 import 'services/theme_service.dart';
+import 'services/biometric_service.dart';
+import 'widgets/biometric_lock_screen.dart';
 
 // Глобальный экземпляр БД для доступа из репозиториев
 late AppDatabase db;
@@ -44,7 +46,7 @@ class DiscipHobbyApp extends StatelessWidget {
           theme: _buildLightTheme(),
           darkTheme: _buildDarkTheme(),
           themeMode: currentThemeMode,
-          home: const DashboardScreen(),
+          home: const _AuthGuard(),
         );
       },
     );
@@ -69,6 +71,57 @@ class DiscipHobbyApp extends StatelessWidget {
       ),
       scaffoldBackgroundColor: Colors.grey.shade900,
     );
+  }
+}
+
+/// Виджет-страж, который проверяет необходимость биометрической разблокировки при старте.
+class _AuthGuard extends StatefulWidget {
+  const _AuthGuard({super.key});
+
+  @override
+  State<_AuthGuard> createState() => _AuthGuardState();
+}
+
+class _AuthGuardState extends State<_AuthGuard> {
+  bool _isChecking = true;
+  bool _isLocked = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkBiometrics();
+  }
+
+  Future<void> _checkBiometrics() async {
+    final isEnabled = await BiometricService.isEnabled();
+    if (mounted) {
+      setState(() {
+        _isChecking = false;
+        _isLocked = isEnabled;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isChecking) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_isLocked) {
+      return BiometricLockScreen(
+        onUnlocked: () {
+          // После успешной разблокики заменяем экран блокировки на дашборд
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const DashboardScreen()),
+          );
+        },
+      );
+    }
+
+    return const DashboardScreen();
   }
 }
 
