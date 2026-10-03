@@ -21,7 +21,6 @@ class CategoryGridWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       // ✅ Внешний отступ равен расстоянию между плитками (12.0)
-      // Это гарантирует, что отступ от края экрана до первой плитки такой же, как между плитками.
       padding: const EdgeInsets.all(12.0),
       child: GridView.builder(
         itemCount: categories.length,
@@ -29,7 +28,7 @@ class CategoryGridWidget extends StatelessWidget {
           crossAxisCount: 2,          // 2 колонки
           crossAxisSpacing: 12,       // Расстояние между колонками
           mainAxisSpacing: 12,        // Расстояние между рядами
-          childAspectRatio: 1.0,      // ✅ ДЕЛАЕМ ИДЕАЛЬНЫЙ КВАДРАТ (ширина = высоте)
+          childAspectRatio: 0.8,      // ✅ ИЗМЕНЕНО: немного увеличена высота для комфортного размещения индикаторов
         ),
         itemBuilder: (context, index) {
           final category = categories[index];

@@ -17,17 +17,50 @@ class CategoryCardWidget extends StatelessWidget {
     required this.onLongPress,
   });
 
-  /// Подсчитывает количество завершенных объектов в категории.
-  Future<int> _getCompletedCount() async {
-    final query = db.selectOnly(db.hobbyObjects)
+  /// Получает количество объектов по всем 4 статусам для категории.
+  Future<Map<String, int>> _getCounts() async {
+    // 1. Активные
+    final activeQuery = db.selectOnly(db.hobbyObjects)
       ..addColumns([db.hobbyObjects.id.count()])
       ..where(
-        db.hobbyObjects.categoryId.equals(category.id) & 
-        db.hobbyObjects.status.equalsValue(HobbyObjectStatus.completed)
+        db.hobbyObjects.categoryId.equals(category.id) &
+        db.hobbyObjects.status.equalsValue(HobbyObjectStatus.active),
       );
-    
-    final row = await query.getSingle();
-    return row.read(db.hobbyObjects.id.count()) ?? 0;
+    final activeCount = (await activeQuery.getSingle()).read(db.hobbyObjects.id.count()) ?? 0;
+
+    // 2. В очереди (queued) - для нижнего текста
+    final queuedQuery = db.selectOnly(db.hobbyObjects)
+      ..addColumns([db.hobbyObjects.id.count()])
+      ..where(
+        db.hobbyObjects.categoryId.equals(category.id) &
+        db.hobbyObjects.status.equalsValue(HobbyObjectStatus.queued), // ✅ ИСПРАВЛЕНО
+      );
+    final queuedCount = (await queuedQuery.getSingle()).read(db.hobbyObjects.id.count()) ?? 0;
+
+    // 3. Отложенные (deferred) - для бейджика с замком/песочными часами
+    final deferredQuery = db.selectOnly(db.hobbyObjects)
+      ..addColumns([db.hobbyObjects.id.count()])
+      ..where(
+        db.hobbyObjects.categoryId.equals(category.id) &
+        db.hobbyObjects.status.equalsValue(HobbyObjectStatus.deferred),
+      );
+    final deferredCount = (await deferredQuery.getSingle()).read(db.hobbyObjects.id.count()) ?? 0;
+
+    // 4. Завершенные
+    final completedQuery = db.selectOnly(db.hobbyObjects)
+      ..addColumns([db.hobbyObjects.id.count()])
+      ..where(
+        db.hobbyObjects.categoryId.equals(category.id) &
+        db.hobbyObjects.status.equalsValue(HobbyObjectStatus.completed),
+      );
+    final completedCount = (await completedQuery.getSingle()).read(db.hobbyObjects.id.count()) ?? 0;
+
+    return {
+      'active': activeCount,
+      'queued': queuedCount,      // ✅ Добавлено
+      'deferred': deferredCount,
+      'completed': completedCount,
+    };
   }
 
   @override
@@ -37,6 +70,10 @@ class CategoryCardWidget extends StatelessWidget {
       color: theme.colorScheme.outline,
       fontWeight: FontWeight.w500,
     );
+
+    final activeColor = theme.colorScheme.primary;
+    final deferredColor = theme.colorScheme.secondary;
+    final grayColor = theme.colorScheme.outline.withValues(alpha: 0.4);
 
     return GestureDetector(
       onTap: onTap,
@@ -50,42 +87,96 @@ class CategoryCardWidget extends StatelessWidget {
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 16.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  category.emoji,
-                  style: const TextStyle(fontSize: 48),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  category.name,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-                // ✅ Только счетчик завершенных
-                FutureBuilder<int>(
-                  future: _getCompletedCount(),
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData) {
-                      return const SizedBox(height: 14);
-                    }
-                    
-                    final completed = snapshot.data!;
-                    
-                    return Text(
-                      completed == 0 ? 'Пока пусто' : 'Завершенных: $completed',
-                      style: textStyle,
+            child: FutureBuilder<Map<String, int>>(
+              future: _getCounts(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+                }
+
+                final counts = snapshot.data!;
+                final activeCount = counts['active']!;
+                final queuedCount = counts['queued']!;       // ✅ Используем queued
+                final deferredCount = counts['deferred']!;
+                final completedCount = counts['completed']!;
+
+                // Логика бейджика зависит от отложенных (deferred), как вы и просили
+                final bool isDeferredLocked = completedCount < 5;
+                final bool hasDeferred = deferredCount > 0; 
+                
+                final deferredIcon = isDeferredLocked ? Icons.lock_outline : Icons.hourglass_bottom;
+                final deferredBadgeColor = isDeferredLocked 
+                    ? grayColor 
+                    : (hasDeferred ? deferredColor : grayColor);
+
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      category.emoji,
+                      style: const TextStyle(fontSize: 48),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      category.name,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                       textAlign: TextAlign.center,
-                    );
-                  },
-                ),
-              ],
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 12),
+                    
+                    // Панель индикаторов
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Tooltip(
+                          message: activeCount > 0 ? 'Есть активные объекты' : 'Нет активных объектов',
+                          child: Icon(
+                            Icons.play_circle_outline,
+                            size: 22,
+                            color: activeCount > 0 ? activeColor : grayColor,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Tooltip(
+                          message: isDeferredLocked 
+                              ? 'Завершите 5 объектов, чтобы открыть отложенные' 
+                              : (hasDeferred ? 'Есть отложенные объекты' : 'Отложенных нет'),
+                          child: Icon(
+                            deferredIcon,
+                            size: 22,
+                            color: deferredBadgeColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                    
+                    const SizedBox(height: 12),
+                    
+                    // Текстовые статусы
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Завершено: $completedCount',
+                          style: textStyle,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'В очереди: $queuedCount', // ✅ ИСПРАВЛЕНО: теперь показывает реальное количество queued
+                          style: textStyle,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ),
