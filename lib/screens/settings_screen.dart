@@ -5,9 +5,11 @@ import '../main.dart';
 import '../services/theme_service.dart';
 import '../services/quote_service.dart';
 import '../services/biometric_service.dart';
+import '../services/backup_service.dart';
 import '../widgets/settings_theme_selector.dart';
 import '../widgets/settings_backup_section.dart';
 import '../widgets/settings_biometric_section.dart';
+import '../widgets/settings_section_header.dart';
 
 /// Экран настроек приложения (Сцена 7).
 class SettingsScreen extends StatefulWidget {
@@ -21,6 +23,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   ThemeMode _currentTheme = ThemeMode.system;
   bool _biometricEnabled = false;
   bool _showQuoteOnStart = true;
+  bool _isBackupInProgress = false;
+  bool _isRestoreInProgress = false;
 
   @override
   void initState() {
@@ -46,25 +50,59 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ThemeService.saveTheme(mode);
   }
 
-  Future<void> _showComingSoon() async {
-    HapticFeedback.lightImpact();
+  Future<void> _createBackup() async {
+    if (_isBackupInProgress) return;
+    setState(() => _isBackupInProgress = true);
+    
+    final success = await BackupService.createBackup();
+    
     if (!mounted) return;
+    setState(() => _isBackupInProgress = false);
+    
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Эта функция скоро будет добавлена'),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: Text(success ? 'Резервная копия успешно создана' : 'Создание копии отменено или не удалось'),
         behavior: SnackBarBehavior.floating,
       ),
     );
   }
 
-  Future<void> _createBackup() async => _showComingSoon();
-  Future<void> _restoreBackup() async => _showComingSoon();
+  Future<void> _restoreBackup() async {
+    if (_isRestoreInProgress) return;
+    setState(() => _isRestoreInProgress = true);
+    
+    final success = await BackupService.restoreBackup();
+    
+    if (!mounted) return;
+    setState(() => _isRestoreInProgress = false);
+    
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Данные успешно восстановлены! Перезапуск...'),
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      
+      // Даём время на отрисовку уведомления перед перезапуском дерева виджетов
+      await Future.delayed(const Duration(milliseconds: 1500));
+      
+      if (mounted) {
+        await restartApp();
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Восстановление отменено или не удалось'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
 
   Future<void> _onBiometricChanged(bool value) async {
     HapticFeedback.selectionClick();
-    
-    // toggleBiometric() сам проверяет доступность и запрашивает подтверждение при включении
     final result = await BiometricService.toggleBiometric();
     
     if (!mounted) return;
@@ -80,7 +118,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Настройка биометрии отменена или недоступна на устройстве'),
+          content: Text('Настройка биометрии отменена или недоступна'),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -101,14 +139,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const _SectionHeader(title: 'Внешний вид', icon: Icons.palette_outlined),
+          const SettingsSectionHeader(title: 'Внешний вид', icon: Icons.palette_outlined),
           const SizedBox(height: 8),
           SettingsThemeSelector(
             currentTheme: _currentTheme,
             onChanged: _onThemeChanged,
           ),
           const SizedBox(height: 24),
-          const _SectionHeader(title: 'Запуск', icon: Icons.auto_awesome_outlined),
+          const SettingsSectionHeader(title: 'Запуск', icon: Icons.auto_awesome_outlined),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.all(16),
@@ -132,16 +170,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          const _SectionHeader(title: 'Данные', icon: Icons.cloud_sync_outlined),
+          const SettingsSectionHeader(title: 'Данные', icon: Icons.cloud_sync_outlined),
           const SizedBox(height: 8),
           SettingsBackupSection(
-            isBackupInProgress: false,
-            isRestoreInProgress: false,
+            isBackupInProgress: _isBackupInProgress,
+            isRestoreInProgress: _isRestoreInProgress,
             onCreateBackup: _createBackup,
             onRestoreBackup: _restoreBackup,
           ),
           const SizedBox(height: 24),
-          const _SectionHeader(title: 'Безопасность', icon: Icons.lock_outline),
+          const SettingsSectionHeader(title: 'Безопасность', icon: Icons.lock_outline),
           const SizedBox(height: 8),
           SettingsBiometricSection(
             biometricEnabled: _biometricEnabled,
@@ -156,27 +194,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  final String title;
-  final IconData icon;
-  const _SectionHeader({required this.title, required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: theme.colorScheme.primary),
-        const SizedBox(width: 8),
-        Text(
-          title,
-          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-        ),
-      ],
     );
   }
 }

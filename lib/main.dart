@@ -13,6 +13,9 @@ late AppDatabase db;
 // Глобальный нотификатор для реактивного изменения темы в рантайме
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.system);
 
+// Глобальный счетчик для "мягкого" перезапуска дерева виджетов
+final ValueNotifier<int> _restartNotifier = ValueNotifier(0);
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -36,17 +39,24 @@ class DiscipHobbyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ValueListenableBuilder перестраивает MaterialApp только при смене темы
-    return ValueListenableBuilder<ThemeMode>(
-      valueListenable: themeNotifier,
-      builder: (context, currentThemeMode, child) {
-        return MaterialApp(
-          title: 'Focus Hobby Tracker',
-          debugShowCheckedModeBanner: false,
-          theme: _buildLightTheme(),
-          darkTheme: _buildDarkTheme(),
-          themeMode: currentThemeMode,
-          home: const _AuthGuard(),
+    // ValueListenableBuilder перестраивает MaterialApp при смене темы ИЛИ при запросе перезапуска
+    return ValueListenableBuilder<int>(
+      valueListenable: _restartNotifier,
+      builder: (context, restartCount, child) {
+        return ValueListenableBuilder<ThemeMode>(
+          valueListenable: themeNotifier,
+          builder: (context, currentThemeMode, child) {
+            return MaterialApp(
+              // Уникальный ключ гарантирует полное уничтожение и пересоздание дерева виджетов
+              key: ValueKey('app_$restartCount'),
+              title: 'Focus Hobby Tracker',
+              debugShowCheckedModeBanner: false,
+              theme: _buildLightTheme(),
+              darkTheme: _buildDarkTheme(),
+              themeMode: currentThemeMode,
+              home: const _AuthGuard(),
+            );
+          },
         );
       },
     );
@@ -76,7 +86,7 @@ class DiscipHobbyApp extends StatelessWidget {
 
 /// Виджет-страж, который проверяет необходимость биометрической разблокировки при старте.
 class _AuthGuard extends StatefulWidget {
-  const _AuthGuard({super.key});
+  const _AuthGuard();
 
   @override
   State<_AuthGuard> createState() => _AuthGuardState();
@@ -113,7 +123,7 @@ class _AuthGuardState extends State<_AuthGuard> {
     if (_isLocked) {
       return BiometricLockScreen(
         onUnlocked: () {
-          // После успешной разблокики заменяем экран блокировки на дашборд
+          // После успешной разблокировки заменяем экран блокировки на дашборд
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (_) => const DashboardScreen()),
           );
@@ -127,7 +137,8 @@ class _AuthGuardState extends State<_AuthGuard> {
 
 /// Функция для "мягкого" перезапуска приложения.
 /// Используется после успешного восстановления БД из бэкапа, 
-/// чтобы Drift заново инициализировал соединение с новым файлом.
+/// чтобы Drift заново инициализировал соединение с новым файлом, 
+/// а дерево виджетов полностью пересоздалось.
 Future<void> restartApp() async {
   try {
     await db.close();
@@ -140,4 +151,7 @@ Future<void> restartApp() async {
   
   // Перезагружаем тему на случай изменений
   themeNotifier.value = await ThemeService.loadTheme();
+  
+  // Инкрементируем счетчик, чтобы MaterialApp с новым ключом полностью пересобрался
+  _restartNotifier.value++;
 }

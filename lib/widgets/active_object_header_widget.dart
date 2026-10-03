@@ -29,10 +29,40 @@ class ActiveObjectHeaderWidget extends StatelessWidget {
         children: [
           GestureDetector(
             onTap: onEmojiTap,
-            child: Text(
-              object.emoji,
-              style: const TextStyle(fontSize: 120),
-            ),
+            child: object.emoji.isNotEmpty
+                ? Text(
+                    object.emoji,
+                    style: const TextStyle(fontSize: 120),
+                  )
+                : Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: theme.colorScheme.outlineVariant,
+                        width: 2,
+                      ),
+                      color: theme.colorScheme.surfaceContainerLow,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.emoji_emotions_outlined,
+                          size: 48,
+                          color: theme.colorScheme.outline,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Выбрать',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.outline,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
           ),
           const SizedBox(height: 16),
           GestureDetector(
