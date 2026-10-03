@@ -10,7 +10,7 @@ import '../widgets/create_category_dialog.dart';
 import '../widgets/quote_splash_overlay.dart';
 import 'settings_screen.dart';
 
-/// Основной экран дашборда с категориями
+/// Основной экран дашборда с категориями (реактивный через Stream)
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -20,16 +20,13 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   late final CategoryRepository _categoryRepo;
-  List<Category> _categories = [];
-  bool _isLoading = true;
-  bool _showQuoteSplash = true; // По умолчанию показываем, потом уточняем из настроек
+  bool _showQuoteSplash = true;
 
   @override
   void initState() {
     super.initState();
     _categoryRepo = CategoryRepository(db);
     _checkQuotePreference();
-    _loadCategories();
   }
 
   Future<void> _checkQuotePreference() async {
@@ -39,25 +36,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  Future<void> _loadCategories() async {
-    final categories = await _categoryRepo.getAllCategories();
-    if (mounted) {
-      setState(() {
-        _categories = categories;
-        _isLoading = false;
-      });
-    }
-  }
-
   Future<void> _showCreateCategoryDialog() async {
-    final result = await showDialog<bool>(
+    await showDialog<bool>(
       context: context,
       builder: (context) => const CreateCategoryDialog(),
     );
-
-    if (result == true && mounted) {
-      await _loadCategories();
-    }
+    // Drift автоматически обновит Stream при создании категории.
+    // Явный вызов обновления больше не требуется.
   }
 
   @override
@@ -66,7 +51,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       children: [
         Scaffold(
           appBar: AppBar(
-            // ✅ ИЗМЕНЕНО: Новое название приложения
             title: const Text('Focus Hobby Tracker'),
             actions: [
               IconButton(
@@ -83,20 +67,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ],
           ),
-          body: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _categories.isEmpty
-                  ? ZeroStateWidget(onCreateCategory: _showCreateCategoryDialog)
-                  : CategoryGridWidget(
-                      categories: _categories,
-                      onRefresh: _loadCategories,
-                    ),
+          body: StreamBuilder<List<Category>>(
+            stream: _categoryRepo.watchAllCategories(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (snapshot.hasError) {
+                return Center(child: Text('Ошибка загрузки: ${snapshot.error}'));
+              }
+
+              final categories = snapshot.data ?? [];
+
+              if (categories.isEmpty) {
+                return ZeroStateWidget(onCreateCategory: _showCreateCategoryDialog);
+              }
+
+              return CategoryGridWidget(
+                categories: categories,
+                onRefresh: () async {}, // Оставлен для совместимости интерфейса
+              );
+            },
+          ),
           floatingActionButton: FloatingActionButton(
             onPressed: _showCreateCategoryDialog,
             child: const Icon(Icons.add),
           ),
         ),
-        // Оверлей с цитатой поверх всего интерфейса
         if (_showQuoteSplash)
           QuoteSplashOverlay(
             onDismissed: () {

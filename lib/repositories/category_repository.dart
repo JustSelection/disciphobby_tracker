@@ -7,7 +7,18 @@ class CategoryRepository {
 
   CategoryRepository(this.db);
 
+  /// ✅ НОВОЕ: Реактивный поток всех категорий.
+  /// Автоматически эмитит новый список при любом изменении таблицы categories в БД.
+  Stream<List<Category>> watchAllCategories() {
+    return (db.select(db.categories)
+          ..orderBy([
+            (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
+          ]))
+        .watch(); // ← Ключевое изменение: .watch() вместо .get()
+  }
+
   /// Получает все категории, отсортированные по дате создания (новые сверху)
+  /// (Оставляем для обратной совместимости)
   Future<List<Category>> getAllCategories() {
     return (db.select(db.categories)
           ..orderBy([

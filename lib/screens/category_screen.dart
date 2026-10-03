@@ -24,67 +24,21 @@ class CategoryScreen extends StatefulWidget {
 class _CategoryScreenState extends State<CategoryScreen> {
   late final HobbyObjectRepository _objectRepo;
 
-  List<HobbyObject> _allObjects = [];
-  bool _isLoading = true;
-
   @override
   void initState() {
     super.initState();
     _objectRepo = HobbyObjectRepository(db);
-    _loadObjects();
   }
-
-  Future<void> _loadObjects() async {
-    debugPrint('🔄 [DEBUG] CategoryScreen: _loadObjects вызван!');
-    
-    final results = await Future.wait([
-      _objectRepo.getObjectsByStatus(widget.category.id, HobbyObjectStatus.active),
-      _objectRepo.getObjectsByStatus(widget.category.id, HobbyObjectStatus.queued),
-      _objectRepo.getObjectsByStatus(widget.category.id, HobbyObjectStatus.deferred),
-      _objectRepo.getObjectsByStatus(widget.category.id, HobbyObjectStatus.completed),
-    ]);
-
-    if (!mounted) return;
-    
-    if (results[0].isNotEmpty) {
-      debugPrint('📅 [DEBUG] Дата startDate АКТИВНОГО объекта, которую вернула БД: ${results[0].first.startDate}');
-    } else {
-      debugPrint('📅 [DEBUG] Активных объектов в этой категории нет.');
-    }
-    
-    debugPrint('✅ [DEBUG] CategoryScreen: Вызываем setState с новыми данными.');
-    setState(() {
-      _allObjects = [...results[0], ...results[1], ...results[2], ...results[3]];
-      _isLoading = false;
-    });
-  }
-
-  // ✅ НОВОЕ: Выделенный метод для свайпа, ТОЧНО КАК в ActiveObjectScreen
-  Future<void> _onRefresh() async {
-    debugPrint('👆 [DEBUG] Свайп распознан! Начинаем обновление...');
-    // Та самая задержка, которая позволяет индикатору отрисоваться и данным обновиться
-    await Future.delayed(const Duration(milliseconds: 300));
-    await _loadObjects();
-    debugPrint('🏁 [DEBUG] Обновление категории завершено.');
-  }
-
-  List<HobbyObject> _objectsByStatus(HobbyObjectStatus status) =>
-      _allObjects.where((o) => o.status == status).toList();
-
-  int get _completedCount => _objectsByStatus(HobbyObjectStatus.completed).length;
 
   Future<void> _showAddObjectDialog() async {
     HapticFeedback.selectionClick();
-    final created = await showModalBottomSheet<bool>(
+    await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => AddObjectDialog(categoryId: widget.category.id),
     );
-    if (created == true && mounted) {
-      HapticFeedback.mediumImpact();
-      await _loadObjects();
-    }
+    // Stream автоматически обновит данные при создании, проверка результата не нужна
   }
 
   Future<void> _editCategory() async {
@@ -98,14 +52,13 @@ class _CategoryScreenState extends State<CategoryScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Категория успешно обновлена'), duration: Duration(seconds: 1)),
       );
-      await _loadObjects();
     }
   }
 
-  Future<void> _exportCategory() async {
+  Future<void> _exportCategory(List<HobbyObject> allObjects) async {
     HapticFeedback.mediumImpact();
     try {
-      await ExportService.exportCategory(widget.category, _allObjects);
+      await ExportService.exportCategory(widget.category, allObjects);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -117,75 +70,98 @@ class _CategoryScreenState extends State<CategoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final active = _objectsByStatus(HobbyObjectStatus.active);
-    final deferred = _objectsByStatus(HobbyObjectStatus.deferred);
-    final queued = _objectsByStatus(HobbyObjectStatus.queued);
-    final completed = _objectsByStatus(HobbyObjectStatus.completed);
+    return StreamBuilder<List<HobbyObject>>(
+      stream: _objectRepo.watchObjectsByCategory(widget.category.id),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
+        if (snapshot.hasError) {
+          return Scaffold(body: Center(child: Text('Ошибка загрузки: ${snapshot.error}')));
+        }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            Hero(tag: 'category_emoji_${widget.category.id}', child: Text(widget.category.emoji, style: const TextStyle(fontSize: 32))),
-            const SizedBox(width: 12),
-            Hero(
-              tag: 'category_name_${widget.category.id}',
-              child: Material(
-                color: Colors.transparent,
-                child: Text(widget.category.name, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(icon: const Icon(Icons.edit_outlined), tooltip: 'Редактировать', onPressed: _editCategory),
-          IconButton(icon: const Icon(Icons.file_download_outlined), tooltip: 'Экспорт', onPressed: _exportCategory),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              // ✅ ИСПРАВЛЕНО: Используем новый метод _onRefresh с задержкой
-              onRefresh: _onRefresh,
-              child: CustomScrollView(
-                // ✅ ИСПРАВЛЕНО: Точно как в работающем active_object_screen_body.dart
-                physics: const AlwaysScrollableScrollPhysics(),
-                slivers: [
-                  SliverPadding(
-                    padding: const EdgeInsets.all(16),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate([
-                        ActiveObjectBlock(activeObjects: active, categoryId: widget.category.id, onObjectChanged: _loadObjects),
-                        const SizedBox(height: 16),
-                        DeferredSlotWidget(
-                          deferredObject: deferred.isEmpty ? null : deferred.first,
-                          activeObject: active.isEmpty ? null : active.first,
-                          completedCount: _completedCount,
-                          categoryId: widget.category.id,
-                          onObjectChanged: _loadObjects,
-                        ),
-                        const SizedBox(height: 16),
-                        QueueListWidget(queuedObjects: queued, categoryId: widget.category.id, onObjectChanged: _loadObjects, onAddObject: _showAddObjectDialog),
-                        const SizedBox(height: 16),
-                        CompletedPreviewWidget(
-                          completedObjects: completed, 
-                          categoryId: widget.category.id, 
-                          categoryName: widget.category.name,
-                        ),
-                        const SizedBox(height: 32),
-                      ]),
-                    ),
+        final allObjects = snapshot.data ?? [];
+
+        // Вспомогательная функция для фильтрации и сортировки (как в оригинале)
+        List<HobbyObject> getByStatus(HobbyObjectStatus status) {
+          final list = allObjects.where((o) => o.status == status).toList();
+          if (status == HobbyObjectStatus.completed) {
+            list.sort((a, b) => (b.endDate ?? DateTime(0)).compareTo(a.endDate ?? DateTime(0)));
+          } else {
+            list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          }
+          return list;
+        }
+
+        final active = getByStatus(HobbyObjectStatus.active);
+        final queued = getByStatus(HobbyObjectStatus.queued);
+        final deferred = getByStatus(HobbyObjectStatus.deferred);
+        final completed = getByStatus(HobbyObjectStatus.completed);
+
+        return Scaffold(
+          appBar: AppBar(
+            title: Row(
+              children: [
+                Hero(tag: 'category_emoji_${widget.category.id}', child: Text(widget.category.emoji, style: const TextStyle(fontSize: 32))),
+                const SizedBox(width: 12),
+                Hero(
+                  tag: 'category_name_${widget.category.id}',
+                  child: Material(
+                    color: Colors.transparent,
+                    child: Text(widget.category.name, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'add_object_fab_${widget.category.id}',
-        onPressed: _showAddObjectDialog,
-        icon: const Icon(Icons.add),
-        label: const Text('В очередь'),
-      ),
+            actions: [
+              IconButton(icon: const Icon(Icons.edit_outlined), tooltip: 'Редактировать', onPressed: _editCategory),
+              IconButton(icon: const Icon(Icons.file_download_outlined), tooltip: 'Экспорт', onPressed: () => _exportCategory(allObjects)),
+            ],
+          ),
+          body: RefreshIndicator(
+            onRefresh: () async {
+              // Stream обновляется автоматически, задержка только для UX индикатора свайпа
+              await Future.delayed(const Duration(milliseconds: 300));
+            },
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                SliverPadding(
+                  padding: const EdgeInsets.all(16),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      ActiveObjectBlock(activeObjects: active, categoryId: widget.category.id, onObjectChanged: () {}),
+                      const SizedBox(height: 16),
+                      DeferredSlotWidget(
+                        deferredObject: deferred.isEmpty ? null : deferred.first,
+                        activeObject: active.isEmpty ? null : active.first,
+                        completedCount: completed.length,
+                        categoryId: widget.category.id,
+                        onObjectChanged: () {}, // Stream гарантирует обновление
+                      ),
+                      const SizedBox(height: 16),
+                      QueueListWidget(queuedObjects: queued, categoryId: widget.category.id, onObjectChanged: () {}, onAddObject: _showAddObjectDialog),
+                      const SizedBox(height: 16),
+                      CompletedPreviewWidget(
+                        completedObjects: completed, 
+                        categoryId: widget.category.id, 
+                        categoryName: widget.category.name,
+                      ),
+                      const SizedBox(height: 32),
+                    ]),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          floatingActionButton: FloatingActionButton.extended(
+            heroTag: 'add_object_fab_${widget.category.id}',
+            onPressed: _showAddObjectDialog,
+            icon: const Icon(Icons.add),
+            label: const Text('В очередь'),
+          ),
+        );
+      },
     );
   }
 }

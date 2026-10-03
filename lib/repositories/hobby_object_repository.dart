@@ -8,13 +8,23 @@ class HobbyObjectRepository {
 
   HobbyObjectRepository(this.db);
 
-  /// Получает объекты конкретной категории с указанным статусом
+  /// ✅ НОВОЕ: Реактивный поток всех объектов категории.
+  /// Автоматически эмитит новый список при любом изменении (смена статуса, имени, даты).
+  Stream<List<HobbyObject>> watchObjectsByCategory(int categoryId) {
+    return (db.select(db.hobbyObjects)
+          ..where((t) => t.categoryId.equals(categoryId))
+          ..orderBy([
+            (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
+          ]))
+        .watch(); // ← Ключевое изменение: .watch() вместо .get()
+  }
+
+  /// Получает объекты конкретной категории с указанным статусом 
+  /// (Оставляем для совместимости, используется в ArchiveScreen)
   Future<List<HobbyObject>> getObjectsByStatus(int categoryId, HobbyObjectStatus status) {
     final query = db.select(db.hobbyObjects)
         ..where((t) => t.categoryId.equals(categoryId) & t.status.equalsValue(status));
 
-    // ✅ ИСПРАВЛЕНО: Завершенные объекты сортируем по дате завершения (новые сверху)
-    // Остальные статусы (queued, active, deferred) сортируем по дате создания
     if (status == HobbyObjectStatus.completed) {
       query.orderBy([
         (t) => OrderingTerm(expression: t.endDate, mode: OrderingMode.desc),
