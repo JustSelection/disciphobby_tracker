@@ -1,6 +1,8 @@
 // lib/screens/settings_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../main.dart';
+import '../services/theme_service.dart';
 import '../services/quote_service.dart';
 import '../widgets/settings_theme_selector.dart';
 import '../widgets/settings_backup_section.dart';
@@ -16,7 +18,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   ThemeMode _currentTheme = ThemeMode.system;
-  final bool _biometricEnabled = false; // ✅ ДОБАВЛЕНО: final, так как состояние больше не меняется
+  final bool _biometricEnabled = false;
   bool _showQuoteOnStart = true;
 
   @override
@@ -33,12 +35,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _onThemeChanged(ThemeMode mode) {
     HapticFeedback.selectionClick();
     setState(() => _currentTheme = mode);
-    // TODO: Шаг 25 — Сохранить выбор через ThemeService
+    themeNotifier.value = mode;
+    ThemeService.saveTheme(mode);
   }
 
-  // ✅ ЕДИНАЯ ЗАГЛУШКА ДЛЯ НЕРЕАЛИЗОВАННЫХ ФУНКЦИЙ
   Future<void> _showComingSoon() async {
-    HapticFeedback.lightImpact(); // Нежная короткая вибрация
+    HapticFeedback.lightImpact();
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -50,7 +52,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _createBackup() async => _showComingSoon();
-
   Future<void> _restoreBackup() async => _showComingSoon();
 
   void _onBiometricChanged(bool value) {
@@ -78,7 +79,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onChanged: _onThemeChanged,
           ),
           const SizedBox(height: 24),
-
           const _SectionHeader(title: 'Запуск', icon: Icons.auto_awesome_outlined),
           const SizedBox(height: 8),
           Container(
@@ -103,7 +103,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 24),
-
           const _SectionHeader(title: 'Данные', icon: Icons.cloud_sync_outlined),
           const SizedBox(height: 8),
           SettingsBackupSection(
@@ -113,7 +112,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onRestoreBackup: _restoreBackup,
           ),
           const SizedBox(height: 24),
-
           const _SectionHeader(title: 'Безопасность', icon: Icons.lock_outline),
           const SizedBox(height: 8),
           SettingsBiometricSection(
@@ -121,7 +119,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onBiometricChanged: _onBiometricChanged,
           ),
           const SizedBox(height: 32),
-
           Center(
             child: Text(
               'Focus Hobby Tracker v1.0.0',
