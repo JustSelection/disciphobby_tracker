@@ -46,7 +46,9 @@ class _QuoteSplashOverlayState extends State<QuoteSplashOverlay>
     );
 
     _controller.forward();
-    _timer = Timer(const Duration(seconds: 5), _startDismiss);
+    
+    // ✅ ИЗМЕНЕНО: Увеличили время показа с 5 до 10 секунд
+    _timer = Timer(const Duration(seconds: 10), _startDismiss);
   }
 
   void _startDismiss() {
@@ -79,27 +81,30 @@ class _QuoteSplashOverlayState extends State<QuoteSplashOverlay>
         final opacity = _opacityAnimation.value;
         return Stack(
           children: [
-            // 1. Затемнение и размытие фона (Mica/Acrylic эффект)
+            // 1. Затемнение и размытие фона + ✅ ТАП ДЛЯ ЗАКРЫТИЯ
             Positioned.fill(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(
-                  sigmaX: 8.0 * opacity,
-                  sigmaY: 8.0 * opacity,
-                ),
-                child: Container(
-                  // ✅ ИСПОЛЬЗУЕМ withValues ВМЕСТО устаревшего withOpacity
-                  color: Colors.black.withValues(alpha: 0.3 * opacity),
+              child: GestureDetector(
+                onTap: _startDismiss, // Закрытие по тапу на свободную область
+                behavior: HitTestBehavior.opaque, // Гарантирует регистрацию тапа по всей площади
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(
+                    sigmaX: 8.0 * opacity,
+                    sigmaY: 8.0 * opacity,
+                  ),
+                  child: Container(
+                    color: Colors.black.withValues(alpha: 0.3 * opacity),
+                  ),
                 ),
               ),
             ),
-            // 2. Центрированное окно с цитатой
+            // 2. Центрированное окно с цитатой (находится выше и не триггерит фон)
             Positioned.fill(
               child: Center(
                 child: Transform.scale(
                   scale: _scaleAnimation.value,
                   child: Opacity(
                     opacity: opacity,
-                    child: QuoteOverlayWidget(quote: _quote), // ✅ Используем фиксированную _quote
+                    child: QuoteOverlayWidget(quote: _quote),
                   ),
                 ),
               ),
